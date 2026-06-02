@@ -137,6 +137,29 @@ export default function App() {
     setCurrentView('dashboard');
   };
 
+  const handleExportExcel = async () => {
+    try {
+      const res = await authFetch(`${API_BASE}/api/solicitudes/export/excel`);
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const today = new Date().toISOString().substring(0, 10);
+        a.download = `reporte_general_solicitudes_${today}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+      } else {
+        console.error('Error al exportar Excel');
+      }
+    } catch (e) {
+      console.error('Error al exportar Excel:', e);
+    }
+  };
+
+
   const handleCreate = () => {
     setEditingData(null);
     setSaveError('');
@@ -285,10 +308,10 @@ export default function App() {
         userRole={userRole}
       />
 
-      <div className="flex-1 flex flex-col min-h-screen relative overflow-x-hidden bg-gradient-to-br from-slate-50 via-rose-50/30 to-slate-100 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
+      <div className="flex-1 flex flex-col min-h-screen relative overflow-x-hidden bg-gray-50 dark:bg-slate-950">
 
         {/* Top Header Unified */}
-        <header className="bg-gem-primary border-b border-gem-primary-dark sticky top-0 z-40 h-16 flex items-center justify-between px-8 shadow-lg print:hidden">
+        <header className="bg-gem-primary dark:bg-slate-900 border-b border-gem-primary-dark dark:border-slate-800 sticky top-0 z-40 h-16 flex items-center justify-between px-8 shadow-sm dark:shadow-slate-950 print:hidden">
            <div className="text-base font-bold text-white tracking-wide uppercase">
              {currentView === 'dashboard' && 'OFICIALÍA MAYOR'}
              {currentView === 'dictamenes-list' && 'Gestión de Dictámenes'}
@@ -411,6 +434,7 @@ export default function App() {
                   }}
                   onDelete={handleDelete}
                   userRole={userRole}
+                  onExportExcel={handleExportExcel}
                 />
               )}
 

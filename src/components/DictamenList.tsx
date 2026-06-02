@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Plus, Filter, FileText, ChevronRight, Download, Eye, X, ChevronDown } from 'lucide-react';
+import { Search, Plus, Filter, FileText, ChevronRight, Eye, X, ChevronDown, Download } from 'lucide-react';
 import { SolicitudModel } from '../types';
 
 interface DictamenListProps {
@@ -7,11 +7,12 @@ interface DictamenListProps {
   onEdit: (solicitud: SolicitudModel) => void;
   onViewDetail: (solicitud: SolicitudModel) => void;
   onDelete: (folioInterno: number) => void;
+  onExportExcel: () => void;
   data: SolicitudModel[];
   userRole: string;
 }
 
-export default function DictamenList({ onCreate, onEdit, onViewDetail, onDelete, data, userRole }: DictamenListProps) {
+export default function DictamenList({ onCreate, onEdit, onViewDetail, onDelete, onExportExcel, data, userRole }: DictamenListProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [filterTipo, setFilterTipo] = useState('');
@@ -56,13 +57,22 @@ export default function DictamenList({ onCreate, onEdit, onViewDetail, onDelete,
           <p className="text-gray-500 dark:text-slate-400 mt-2 font-medium">Consulta y seguimiento de solicitudes de dictamen.</p>
         </div>
         <div className="flex gap-3 w-full md:w-auto">
-           <button onClick={onCreate} className="flex-1 md:flex-none flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-white bg-gem-primary hover:bg-gem-primary-dark transition-all shadow-lg shadow-gem-primary/20">
-             <Plus className="w-5 h-5" /> Nueva Solicitud
-           </button>
+          {/* Botón Exportar Excel */}
+          <button
+            onClick={onExportExcel}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm text-white bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 transition-all shadow-md shadow-emerald-600/20"
+            title="Exportar a Excel con todos los campos"
+          >
+            <Download className="w-4 h-4" />
+            Exportar Excel
+          </button>
+          <button onClick={onCreate} className="flex-1 md:flex-none flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-white bg-gem-primary hover:bg-gem-primary-dark transition-all shadow-lg shadow-gem-primary/20">
+            <Plus className="w-5 h-5" /> Nueva Solicitud
+          </button>
         </div>
       </div>
 
-      <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-md rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col pt-4">
+      <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col pt-4">
         
         {/* Search + Filter toggle */}
         <div className="px-6 pb-4 flex flex-col md:flex-row gap-4">
@@ -73,7 +83,7 @@ export default function DictamenList({ onCreate, onEdit, onViewDetail, onDelete,
               placeholder="Buscar por folio, oficio o dependencia..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-gem-primary/20 focus:border-gem-primary transition-all text-sm text-gray-800 dark:text-slate-200 placeholder:text-gray-400 dark:placeholder:text-slate-500"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-700 focus:ring-2 focus:ring-gem-primary/20 focus:border-gem-primary transition-all text-sm text-gray-800 dark:text-slate-200 placeholder:text-gray-400 dark:placeholder:text-slate-500"
             />
           </div>
           <button
@@ -129,7 +139,7 @@ export default function DictamenList({ onCreate, onEdit, onViewDetail, onDelete,
         {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-gray-600 dark:text-slate-300">
-             <thead className="bg-gray-50/80 dark:bg-slate-900/50 text-xs uppercase text-gray-500 dark:text-slate-400 border-y border-gray-200 dark:border-slate-700">
+             <thead className="bg-gray-50/80 dark:bg-slate-800/80 text-xs uppercase text-gray-500 dark:text-slate-400 border-y border-gray-200 dark:border-slate-700">
                 <tr>
                    <th className="px-6 py-4 font-semibold w-24">Folio</th>
                    <th className="px-6 py-4 font-semibold">Oficio y Dependencia</th>
@@ -139,9 +149,9 @@ export default function DictamenList({ onCreate, onEdit, onViewDetail, onDelete,
                    <th className="px-6 py-4 font-semibold text-right">Acciones</th>
                 </tr>
              </thead>
-             <tbody className="divide-y divide-gray-100 dark:divide-slate-700 bg-white/50 dark:bg-transparent">
+             <tbody className="divide-y divide-gray-100 dark:divide-slate-700/60 bg-white/50 dark:bg-transparent">
                 {filteredData.map(item => (
-                  <tr key={item.folioInterno} className="hover:bg-blue-50/50 dark:hover:bg-slate-700/50 transition-colors group">
+                  <tr key={item.folioInterno} className="hover:bg-blue-50/50 dark:hover:bg-slate-800/60 transition-colors group">
                     <td className="px-6 py-4">
                       <span className="font-mono font-semibold text-gray-800 dark:text-slate-100 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded">
                         #{item.folioInterno?.toString().padStart(4, '0')}

@@ -51,6 +51,13 @@ services:
           property: password
       - key: JWT_SECRET
         generateValue: true
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: dictamenes-frontend
+          envVarKey: RENDER_EXTERNAL_URL
 
 databases:
   # ---------------------------------------------

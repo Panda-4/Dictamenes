@@ -42,6 +42,19 @@ public class AuditoriaController {
         return repository.findByFilters(accion, usuario, fechaDesde, fechaHasta, pageable);
     }
 
+    /** Endpoint de accesos (solo INICIO_SESIÓN) */
+    @GetMapping("/accesos")
+    public Page<AuditoriaLog> getAccesos(
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "20") int size,
+            @RequestParam(value = "usuario", required = false) String usuario,
+            @RequestParam(value = "fechaDesde", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaDesde,
+            @RequestParam(value = "fechaHasta", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaHasta
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+        return repository.findByFilters("INICIO_SESIÓN", usuario, fechaDesde, fechaHasta, pageable);
+    }
+
     @GetMapping("/stats")
     public Map<String, Long> getStats() {
         Map<String, Long> stats = new HashMap<>();
@@ -49,6 +62,7 @@ public class AuditoriaController {
         stats.put("creaciones", repository.countByAccion("CREACIÓN"));
         stats.put("actualizaciones", repository.countByAccion("ACTUALIZACIÓN"));
         stats.put("eliminaciones", repository.countByAccion("ELIMINACIÓN"));
+        stats.put("accesos", repository.countByAccion("INICIO_SESIÓN"));
         return stats;
     }
 
@@ -63,7 +77,6 @@ public class AuditoriaController {
         response.setContentType("text/csv; charset=UTF-8");
         response.setHeader("Content-Disposition", "attachment; filename=\"auditoria_logs.csv\"");
 
-        // Fetch up to 100,000 logs matching the criteria (effectively unpaginated)
         List<AuditoriaLog> logs = repository.findByFilters(
                 accion, usuario, fechaDesde, fechaHasta,
                 PageRequest.of(0, 100000, Sort.by("id").descending())
@@ -72,17 +85,19 @@ public class AuditoriaController {
         PrintWriter writer = response.getWriter();
         // Write UTF-8 BOM for Excel compatibility
         writer.write('\ufeff');
-        writer.println("ID,Fecha,Usuario,Rol,Acción,Entidad,Detalle");
+        writer.println("ID,Fecha,Usuario,Rol,Acción,Entidad,Detalle,IP,Dispositivo");
 
         for (AuditoriaLog log : logs) {
-            writer.println(String.format("%d,%s,%s,%s,%s,%s,\"%s\"",
+            writer.println(String.format("%d,%s,%s,%s,%s,%s,\"%s\",%s,%s",
                     log.getId(),
                     log.getFecha() != null ? log.getFecha().toString().replace("T", " ").substring(0, 19) : "",
                     escapeCsv(log.getUsuario()),
                     escapeCsv(log.getRol()),
                     escapeCsv(log.getAccion()),
                     escapeCsv(log.getEntidad()),
-                    escapeCsv(log.getDetalle())
+                    escapeCsv(log.getDetalle()),
+                    escapeCsv(log.getIp()),
+                    escapeCsv(log.getDispositivo())
             ));
         }
     }

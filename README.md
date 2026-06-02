@@ -55,12 +55,45 @@ El módulo backend se encuentra en la carpeta `/src-backend`. Su función es man
 
 ### Conectando Frontend con Backend
 
-Dado que los archivos proporcionados tienen un Dummy Data estático, una vez que el Backend esté arriba podrás cambiar los servicios o llamadas dentro de React (`fetch` o `axios`) apuntando hacia los endpoints que se crearon:
+Dado que los servicios en React se comunican de forma dinámica utilizando fetch, una vez que el Backend esté arriba podrás cambiar los servicios o llamadas dentro de React (`fetch` o `axios`) apuntando hacia los endpoints que se crearon:
 - `http://localhost:8080/api/solicitudes`
 - `http://localhost:8080/api/dashboard/stats`
 - `http://localhost:8080/api/auditoria`
 
-### Notas
-- Recuerda siempre poner excepciones de CORS si lo hosteas en locales distintos (ya hay excepciones para `*` agregadas al backend por facilidad).
+## Despliegue en Producción (Render)
 
-¡Listo! Con estos pasos podrás ejectuar ambos lados de la aplicación en tu entorno local.
+El proyecto está configurado para desplegarse de manera automatizada en **Render** a través de la infraestructura como código especificada en `render.yaml`.
+
+### 1. Requisitos en Render
+- Una cuenta en [Render](https://render.com/).
+- Tener este repositorio conectado a tu cuenta de Render (Blueprint).
+
+### 2. Base de Datos (PostgreSQL)
+El archivo `render.yaml` creará automáticamente una instancia de base de datos PostgreSQL llamada `dictamenes-db` bajo el plan gratuito. 
+
+### 3. Variables de Entorno Requeridas
+
+#### Backend (Spring Boot - Docker)
+Estas variables se configuran e inyectan automáticamente a través de la base de datos vinculada o del servicio web:
+* **`DB_HOST`**: Host de la base de datos (se mapea automáticamente).
+* **`DB_PORT`**: Puerto de la base de datos (se mapea automáticamente).
+* **`DB_NAME`**: Nombre de la base de datos (se mapea automáticamente).
+* **`DB_USERNAME`**: Usuario de la base de datos (se mapea automáticamente).
+* **`DB_PASSWORD`**: Contraseña de la base de datos (se mapea automáticamente).
+* **`JWT_SECRET`**: Generado de manera aleatoria automáticamente por Render al desplegar.
+* **`SPRING_PROFILES_ACTIVE`**: Configurado como `prod` para activar la configuración segura de base de datos y ocultación de stack traces.
+* **`FRONTEND_URL`**: Toma automáticamente la URL generada del frontend para configurar la protección CORS dinámica.
+
+#### Frontend (React / Vite - Static Site)
+* **`VITE_API_URL`**: Toma automáticamente la URL externa generada del backend (`RENDER_EXTERNAL_URL`).
+
+### 4. Instrucciones de Despliegue en Render
+1. Ve al Dashboard de Render.
+2. Haz clic en **New** -> **Blueprint**.
+3. Selecciona tu repositorio y haz clic en **Connect**.
+4. Nombra tu grupo de servicios (ej. `dictamenes-app`).
+5. Render creará:
+   - La base de datos PostgreSQL (`dictamenes-db`).
+   - El servicio del backend de Spring Boot compilando el `Dockerfile` de la carpeta `src-backend`.
+   - El sitio estático del frontend compilando el bundle de React y Vite.
+6. Espera a que termine la compilación de ambos servicios. ¡La aplicación estará en línea y segura!

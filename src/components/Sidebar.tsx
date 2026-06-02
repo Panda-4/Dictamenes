@@ -26,19 +26,21 @@ export default function Sidebar({ currentView, onChangeView, onLogout, userRole 
   };
 
   return (
-    <div className="w-64 flex-shrink-0 bg-gradient-to-b from-gem-primary to-[#6b1535] dark:from-[#4a0f22] dark:to-[#3a0a1a] text-white flex flex-col h-screen sticky top-0 border-r border-gem-primary-dark dark:border-[#2d0814] shadow-[4px_0_24px_rgba(149,31,69,0.15)] dark:shadow-[4px_0_24px_rgba(0,0,0,0.3)] relative z-20 print:hidden">
-      <div className="p-6 flex items-center gap-3 border-b border-white/10">
-        <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center border border-white/20 shadow-inner">
+    <div className="w-64 flex-shrink-0 bg-white dark:bg-slate-950 text-gray-800 dark:text-slate-100 flex flex-col h-screen sticky top-0 border-r border-gray-200 dark:border-slate-800 shadow-sm dark:shadow-slate-900/50 relative z-20 print:hidden">
+      {/* Logo / Brand */}
+      <div className="p-6 flex items-center gap-3 border-b border-gray-100 dark:border-slate-800">
+        <div className="w-10 h-10 bg-gem-primary rounded-xl flex items-center justify-center shadow-sm">
           <span className="text-white font-bold text-2xl tracking-tighter">G</span>
         </div>
         <div className="flex flex-col">
-          <span className="font-bold text-sm tracking-widest text-gem-secondary uppercase">DGRM</span>
-          <span className="text-xs text-white/70 font-medium">Sistema de Dictámenes</span>
+          <span className="font-bold text-sm tracking-widest text-gem-primary dark:text-gem-secondary uppercase">DGRM</span>
+          <span className="text-xs text-gray-500 dark:text-slate-400 font-medium">Sistema de Dictámenes</span>
         </div>
       </div>
 
-      <div className="flex-1 py-8 px-4 flex flex-col gap-2">
-        <div className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-2 px-2">Menú Principal</div>
+      {/* Nav Items */}
+      <div className="flex-1 py-8 px-4 flex flex-col gap-1">
+        <div className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-2 px-2">Menú Principal</div>
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.id);
@@ -46,27 +48,28 @@ export default function Sidebar({ currentView, onChangeView, onLogout, userRole 
             <button
               key={item.id}
               onClick={() => onChangeView(item.id)}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 relative overflow-hidden group ${
-                active 
-                  ? 'bg-white text-gem-primary font-semibold shadow-lg' 
-                  : 'text-white/80 hover:bg-white/10 hover:text-white'
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 relative group ${
+                active
+                  ? 'bg-gem-primary text-white font-semibold shadow-md shadow-gem-primary/20'
+                  : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-100'
               }`}
             >
               {active && (
-                <div className="absolute inset-y-0 left-0 w-1 bg-gem-secondary rounded-r-full"></div>
+                <div className="absolute inset-y-0 right-0 w-1 bg-gem-secondary rounded-l-full"></div>
               )}
-              <Icon className={`w-5 h-5 transition-transform duration-300 ${active ? 'scale-110' : 'group-hover:scale-110'}`} />
-              <span className="flex-1 text-left">{item.label}</span>
-              {active && <ChevronRight className="w-4 h-4 text-gem-primary/50" />}
+              <Icon className={`w-5 h-5 transition-transform duration-200 ${active ? 'scale-110' : 'group-hover:scale-105'}`} />
+              <span className="flex-1 text-left text-sm">{item.label}</span>
+              {active && <ChevronRight className="w-4 h-4 text-white/60" />}
             </button>
           );
         })}
       </div>
 
-      <div className="p-4 border-t border-white/10">
+      {/* Logout */}
+      <div className="p-4 border-t border-gray-100 dark:border-slate-800">
         <button
           onClick={onLogout}
-          className="flex items-center gap-3 px-4 py-3 rounded-xl w-full text-white/80 hover:bg-red-500/20 hover:text-white transition-all group"
+          className="flex items-center gap-3 px-4 py-3 rounded-xl w-full text-gray-500 dark:text-slate-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-all group"
         >
           <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
           <span className="font-medium text-sm">Cerrar Sesión</span>

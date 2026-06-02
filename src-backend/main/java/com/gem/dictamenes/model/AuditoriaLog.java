@@ -22,9 +22,12 @@ public class AuditoriaLog {
     @Column(columnDefinition = "TEXT")
     private String cambiosDetalle;
 
+    private String ip;
+    private String dispositivo;
+
     public AuditoriaLog() {}
 
-    public AuditoriaLog(Long id, LocalDateTime fecha, String rol, String usuario, String accion, String entidad, String detalle, String cambiosDetalle) {
+    public AuditoriaLog(Long id, LocalDateTime fecha, String rol, String usuario, String accion, String entidad, String detalle, String cambiosDetalle, String ip, String dispositivo) {
         this.id = id;
         this.fecha = fecha;
         this.rol = rol;
@@ -33,6 +36,8 @@ public class AuditoriaLog {
         this.entidad = entidad;
         this.detalle = detalle;
         this.cambiosDetalle = cambiosDetalle;
+        this.ip = ip;
+        this.dispositivo = dispositivo;
     }
 
     // Getters and Setters
@@ -59,6 +64,12 @@ public class AuditoriaLog {
 
     public String getCambiosDetalle() { return cambiosDetalle; }
     public void setCambiosDetalle(String cambiosDetalle) { this.cambiosDetalle = cambiosDetalle; }
+
+    public String getIp() { return ip; }
+    public void setIp(String ip) { this.ip = ip; }
+
+    public String getDispositivo() { return dispositivo; }
+    public void setDispositivo(String dispositivo) { this.dispositivo = dispositivo; }
 
     @Override
     public boolean equals(Object o) {

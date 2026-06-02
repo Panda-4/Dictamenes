@@ -7,6 +7,8 @@ import com.gem.dictamenes.repository.SolicitudRepository;
 import com.gem.dictamenes.repository.AuditoriaRepository;
 import com.gem.dictamenes.repository.NotificacionRepository;
 import com.gem.dictamenes.service.SolicitudService;
+import com.gem.dictamenes.util.RequestUtils;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -219,6 +221,17 @@ public class SolicitudServiceImpl implements SolicitudService {
             log.setCambiosDetalle(cambiosDetalle);
             log.setFecha(LocalDateTime.now());
             log.setEntidad("Solicitud");
+
+            // Obtener IP y dispositivo desde el contexto de la solicitud HTTP
+            HttpServletRequest request = RequestUtils.getCurrentRequest();
+            if (request != null) {
+                log.setIp(RequestUtils.getClientIp(request));
+                log.setDispositivo(RequestUtils.getDevice(request));
+            } else {
+                log.setIp("127.0.0.1");
+                log.setDispositivo("Sistema / Interno");
+            }
+
             auditoriaRepository.save(log);
         } catch (Exception e) {
             System.err.println("Error guardando log de auditoría: " + e.getMessage());
