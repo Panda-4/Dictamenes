@@ -1,6 +1,7 @@
 package com.gem.dictamenes.controller;
 
 import com.gem.dictamenes.model.Solicitud;
+import com.gem.dictamenes.model.AuditoriaLog;
 import com.gem.dictamenes.service.SolicitudService;
 import com.gem.dictamenes.util.ExcelHelper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,12 @@ public class SolicitudController {
     public ResponseEntity<Solicitud> getById(@PathVariable Long id) {
         Solicitud solicitud = solicitudService.findById(id);
         return solicitud != null ? ResponseEntity.ok(solicitud) : ResponseEntity.notFound().build();
+    }
+
+    @GetMapping("/{id}/historial")
+    public ResponseEntity<List<AuditoriaLog>> getHistorial(@PathVariable Long id) {
+        List<AuditoriaLog> logs = solicitudService.getHistorial(id);
+        return ResponseEntity.ok(logs);
     }
 
     @PostMapping
