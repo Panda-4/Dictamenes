@@ -75,4 +75,31 @@ public class SolicitudController {
         response.getOutputStream().write(excelBytes);
         response.getOutputStream().flush();
     }
+
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @GetMapping("/import/template")
+    public void descargarPlantilla(HttpServletResponse response) throws IOException {
+        byte[] excelBytes = ExcelHelper.generateTemplate();
+        String filename = "plantilla_importacion_solicitudes.xlsx";
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
+        response.setContentLength(excelBytes.length);
+        response.getOutputStream().write(excelBytes);
+        response.getOutputStream().flush();
+    }
+
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PostMapping("/import/preview")
+    public ResponseEntity<com.gem.dictamenes.dto.ExcelImportDto> previsualizarImportacion(
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file) throws IOException {
+        com.gem.dictamenes.dto.ExcelImportDto dto = solicitudService.previewImport(file);
+        return ResponseEntity.ok(dto);
+    }
+
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PostMapping("/import/confirm")
+    public ResponseEntity<?> confirmarImportacion(@RequestBody List<Solicitud> solicitudes) {
+        solicitudService.confirmImport(solicitudes);
+        return ResponseEntity.ok(java.util.Map.of("message", "Importación masiva completada con éxito."));
+    }
 }

@@ -126,12 +126,11 @@ export default function DictamenForm({ onCancel, onSave, initialData, errorMessa
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
               <div className="space-y-1">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300">Tipo de Solicitud *</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300">Tipo de Solicitud</label>
                 <select 
                   name="tipoSolicitud" 
                   value={formData.tipoSolicitud || ''} 
                   onChange={handleChange}
-                  required
                   className="w-full bg-white/50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-600 text-gray-800 dark:text-slate-100 text-sm rounded-xl focus:ring-2 focus:ring-gem-primary/20 focus:border-gem-primary block p-3 transition-colors shadow-sm"
                 >
                   <option value="">Seleccione un tipo...</option>
@@ -144,25 +143,23 @@ export default function DictamenForm({ onCancel, onSave, initialData, errorMessa
               </div>
 
               <div className="space-y-1">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300">Número de Oficio de Solicitud *</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300">Número de Oficio de Solicitud</label>
                 <input 
                   type="text" 
                   name="numeroOficioSolicitud"
                   value={formData.numeroOficioSolicitud || ''}
                   onChange={handleChange}
-                  required
                   placeholder="Ej. GEM-202X-001"
                   className="w-full bg-white/50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-600 text-gray-800 dark:text-slate-100 text-sm rounded-xl focus:ring-2 focus:ring-gem-primary/20 focus:border-gem-primary block p-3 transition-colors shadow-sm placeholder:text-gray-400 dark:placeholder:text-slate-500"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300">Dependencia / OPD *</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300">Dependencia / OPD</label>
                 <select 
                   name="dependenciaOPD" 
                   value={formData.dependenciaOPD || ''} 
                   onChange={handleChange}
-                  required
                   className="w-full bg-white/50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-600 text-gray-800 dark:text-slate-100 text-sm rounded-xl focus:ring-2 focus:ring-gem-primary/20 focus:border-gem-primary block p-3 transition-colors shadow-sm"
                 >
                   <option value="">Seleccione...</option>
@@ -210,13 +207,12 @@ export default function DictamenForm({ onCancel, onSave, initialData, errorMessa
               </div>
 
               <div className="space-y-1">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300">Unidad Administrativa *</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300">Unidad Administrativa</label>
                 <input 
                   type="text" 
                   name="unidadAdministrativa"
                   value={formData.unidadAdministrativa || ''}
                   onChange={handleChange}
-                  required
                   className="w-full bg-white/50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-600 text-gray-800 dark:text-slate-100 text-sm rounded-xl focus:ring-2 focus:ring-gem-primary/20 focus:border-gem-primary block p-3 transition-colors shadow-sm"
                 />
               </div>
@@ -319,20 +315,19 @@ export default function DictamenForm({ onCancel, onSave, initialData, errorMessa
               </div>
 
               <div className="space-y-1">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300">Partida Presupuestal *</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300">Partida Presupuestal</label>
                 <input 
                   type="text" 
                   name="partidaPresupuestal"
                   value={formData.partidaPresupuestal || ''}
                   onChange={handleChange}
-                  required
                   placeholder="Ej. 3311"
                   className="w-full bg-white/50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-600 text-gray-800 dark:text-slate-100 text-sm rounded-xl focus:ring-2 focus:ring-gem-primary/20 focus:border-gem-primary block p-3 transition-colors shadow-sm"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300">Monto de la Solicitud *</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300">Monto de la Solicitud</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <span className="text-gray-500 dark:text-slate-400 font-medium">$</span>
@@ -343,7 +338,6 @@ export default function DictamenForm({ onCancel, onSave, initialData, errorMessa
                     name="montoSolicitud"
                     value={formData.montoSolicitud || ''}
                     onChange={handleChange}
-                    required
                     placeholder="0.00"
                     className="w-full font-mono pl-8 bg-white/50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-600 text-gray-800 dark:text-slate-100 text-sm rounded-xl focus:ring-2 focus:ring-gem-primary/20 focus:border-gem-primary block p-3 transition-colors shadow-sm"
                   />

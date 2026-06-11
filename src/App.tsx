@@ -12,6 +12,7 @@ import ToastContainer, { ToastItem } from './components/Toast';
 import { SolicitudModel } from './types';
 import { Moon, Sun, Bell, User } from 'lucide-react';
 import Profile from './components/Profile';
+import ImportarExcel from './components/ImportarExcel';
 import { login as authLogin, logout as authLogout, getUser, isAuthenticated, authFetch, AuthUser, API_BASE, setOnSessionExpired } from './services/authService';
 
 export default function App() {
@@ -319,6 +320,7 @@ export default function App() {
              {currentView === 'dictamenes-detail' && 'Detalle de Solicitud'}
               {currentView === 'configuracion' && 'Configuración'}
               {currentView === 'auditoria' && 'Auditoría'}
+              {currentView === 'importar' && 'Importar Excel'}
               {currentView === 'profile' && 'Mi Perfil'}
            </div>
            <div className="flex items-center gap-6 text-sm font-medium">
@@ -459,6 +461,19 @@ export default function App() {
               {currentView === 'configuracion' && <Configuracion />}
               
               {currentView === 'auditoria' && <Auditoria />}
+
+              {currentView === 'importar' && (
+                <ImportarExcel 
+                  onSuccess={() => {
+                    fetchData();
+                    setCurrentView('dictamenes-list');
+                  }}
+                  onCancel={() => {
+                    setCurrentView('dictamenes-list');
+                  }}
+                  addToast={addToast}
+                />
+              )}
 
               {currentView === 'profile' && (
                 <Profile

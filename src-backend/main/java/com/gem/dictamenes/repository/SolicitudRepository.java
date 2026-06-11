@@ -18,4 +18,6 @@ public interface SolicitudRepository extends JpaRepository<Solicitud, Long> {
 
     @Query("SELECT COALESCE(SUM(s.montoSolicitud), 0) FROM Solicitud s WHERE s.estatusGeneral = :estatus")
     BigDecimal sumMontoByEstatus(@Param("estatus") String estatus);
+
+    java.util.Optional<Solicitud> findByNumeroOficioSolicitud(String numeroOficioSolicitud);
 }

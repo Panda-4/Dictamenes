@@ -21,9 +21,9 @@ export default function DictamenList({ onCreate, onEdit, onViewDetail, onDelete,
   const [filterDateTo, setFilterDateTo] = useState('');
 
   const filteredData = data.filter(d => {
-    const matchesSearch = d.numeroOficioSolicitud.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = (d.numeroOficioSolicitud || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (d.dependenciaOPD && d.dependenciaOPD.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      d.tipoSolicitud.toLowerCase().includes(searchTerm.toLowerCase());
+      (d.tipoSolicitud || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesTipo = !filterTipo || d.tipoSolicitud === filterTipo;
     const matchesEstatus = !filterEstatus || d.estatusGeneral === filterEstatus;
     const matchesDateFrom = !filterDateFrom || (d.fechaRecepcionDGRMOM && d.fechaRecepcionDGRMOM >= filterDateFrom);
@@ -158,13 +158,13 @@ export default function DictamenList({ onCreate, onEdit, onViewDetail, onDelete,
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="font-semibold text-gray-800 dark:text-slate-100">{item.numeroOficioSolicitud}</div>
+                      <div className="font-semibold text-gray-800 dark:text-slate-100">{item.numeroOficioSolicitud || 'S/N'}</div>
                       <div className="text-xs text-gray-500 dark:text-slate-400 mt-1 flex items-center gap-1">
-                        <FileText className="w-3 h-3" /> {item.dependenciaOPD}
+                        <FileText className="w-3 h-3" /> {item.dependenciaOPD || 'No especificada'}
                       </div>
                     </td>
-                    <td className="px-6 py-4 font-medium text-gray-700 dark:text-slate-300">{item.tipoSolicitud}</td>
-                    <td className="px-6 py-4 font-mono">${item.montoSolicitud.toLocaleString('es-MX', {minimumFractionDigits: 2})}</td>
+                    <td className="px-6 py-4 font-medium text-gray-700 dark:text-slate-300">{item.tipoSolicitud || 'No especificado'}</td>
+                    <td className="px-6 py-4 font-mono">${item.montoSolicitud?.toLocaleString('es-MX', {minimumFractionDigits: 2}) || '0.00'}</td>
                     <td className="px-6 py-4 text-center">
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(item.estatusGeneral)}`}>
                          {item.estatusGeneral}

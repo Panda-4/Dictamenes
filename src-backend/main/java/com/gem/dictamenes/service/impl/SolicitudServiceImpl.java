@@ -47,6 +47,25 @@ public class SolicitudServiceImpl implements SolicitudService {
 
     @Override
     public Solicitud save(Solicitud solicitud) {
+        // Aplicar valores por defecto para evitar fallos por constraints NOT NULL en la base de datos
+        if (solicitud.getNumeroOficioSolicitud() == null || solicitud.getNumeroOficioSolicitud().trim().isEmpty()) {
+            solicitud.setNumeroOficioSolicitud("S/N");
+        }
+        if (solicitud.getDependenciaOPD() == null || solicitud.getDependenciaOPD().trim().isEmpty()) {
+            solicitud.setDependenciaOPD("No especificada");
+        }
+        if (solicitud.getUnidadAdministrativa() == null || solicitud.getUnidadAdministrativa().trim().isEmpty()) {
+            solicitud.setUnidadAdministrativa("No especificada");
+        }
+        if (solicitud.getPartidaPresupuestal() == null || solicitud.getPartidaPresupuestal().trim().isEmpty()) {
+            solicitud.setPartidaPresupuestal("N/A");
+        }
+        if (solicitud.getMontoSolicitud() == null) {
+            solicitud.setMontoSolicitud(java.math.BigDecimal.ZERO);
+        }
+        
+        normalizarCampos(solicitud);
+
         boolean isNew = solicitud.getFolioInterno() == null;
         String cambiosJson = null;
         String detalle;
@@ -77,6 +96,46 @@ public class SolicitudServiceImpl implements SolicitudService {
         }
         
         return saved;
+    }
+
+    private void normalizarCampos(Solicitud solicitud) {
+        if (solicitud.getTipoSolicitud() != null) {
+            String ts = solicitud.getTipoSolicitud().trim().toLowerCase();
+            if (ts.contains("procedencia")) {
+                solicitud.setTipoSolicitud("Dictamen de Procedencia");
+            } else if (ts.contains("opinión") || ts.contains("opinion") || ts.equals("opinión técnica") || ts.equals("opinión técnica previa")) {
+                solicitud.setTipoSolicitud("Opinión Técnica Previa");
+            } else if (ts.contains("previo")) {
+                solicitud.setTipoSolicitud("Dictamen Previo");
+            } else if (ts.contains("austeridad") || ts.contains("excepción") || ts.contains("excepcion")) {
+                solicitud.setTipoSolicitud("Excepción a Medidas de Austeridad");
+            } else if (ts.contains("técnico") || ts.contains("tecnico") || ts.contains("dictamen")) {
+                solicitud.setTipoSolicitud("Dictamen Técnico");
+            } else {
+                solicitud.setTipoSolicitud("Dictamen Técnico");
+            }
+        } else {
+            solicitud.setTipoSolicitud("Dictamen Técnico");
+        }
+
+        if (solicitud.getEstatusGeneral() != null) {
+            String eg = solicitud.getEstatusGeneral().trim().toLowerCase();
+            if (eg.contains("concluid") || eg.contains("entregado a dependencia")) {
+                solicitud.setEstatusGeneral("Concluido Entregado a dependencia solicitante");
+            } else if (eg.contains("elaboraci") || eg.contains("proceso")) {
+                solicitud.setEstatusGeneral("En proceso de elaboración");
+            } else if (eg.contains("firma")) {
+                solicitud.setEstatusGeneral("En Firma de Dirección General");
+            } else if (eg.contains("autorizaci") || eg.contains("om")) {
+                solicitud.setEstatusGeneral("En autorización de la OM");
+            } else if (eg.contains("opinión") || eg.contains("opinion") || eg.contains("análisis") || eg.contains("analisis")) {
+                solicitud.setEstatusGeneral("En Opinión Técnica de Subdirección de Fianzas y Seguros");
+            } else {
+                solicitud.setEstatusGeneral("En Opinión Técnica de Subdirección de Fianzas y Seguros");
+            }
+        } else {
+            solicitud.setEstatusGeneral("En Opinión Técnica de Subdirección de Fianzas y Seguros");
+        }
     }
 
     /**
@@ -245,5 +304,22 @@ public class SolicitudServiceImpl implements SolicitudService {
         Solicitud solicitud = solicitudRepository.findById(id).orElse(null);
         String oficio = solicitud != null ? solicitud.getNumeroOficioSolicitud() : "";
         return auditoriaRepository.findBySolicitudIdAndOficio(id, oficio);
+    }
+
+    @Override
+    public com.gem.dictamenes.dto.ExcelImportDto previewImport(org.springframework.web.multipart.MultipartFile file) throws java.io.IOException {
+        try (java.io.InputStream is = file.getInputStream()) {
+            return com.gem.dictamenes.util.ExcelHelper.parseExcel(is, solicitudRepository);
+        }
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public void confirmImport(List<Solicitud> solicitudes) {
+        if (solicitudes == null) return;
+        for (Solicitud s : solicitudes) {
+            save(s);
+        }
+        registrarAuditoria("IMPORTACIÓN_EXCEL", "Carga masiva realizada. Registros importados/actualizados: " + solicitudes.size(), null);
     }
 }

@@ -78,8 +78,10 @@ export async function authFetch(url: string, options: RequestInit = {}): Promise
   }
 
   const token = getToken();
+  const isFormData = options.body instanceof FormData;
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    // No forzar Content-Type para FormData: el navegador lo genera con el boundary correcto
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers as Record<string, string> || {}),
   };
   if (token) {

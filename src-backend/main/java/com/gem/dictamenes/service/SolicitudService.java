@@ -10,4 +10,6 @@ public interface SolicitudService {
     Solicitud save(Solicitud solicitud);
     void delete(Long id);
     List<AuditoriaLog> getHistorial(Long id);
+    com.gem.dictamenes.dto.ExcelImportDto previewImport(org.springframework.web.multipart.MultipartFile file) throws java.io.IOException;
+    void confirmImport(List<Solicitud> solicitudes);
 }

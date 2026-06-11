@@ -16,7 +16,6 @@ public class Solicitud {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long folioInterno;
     
-    @NotBlank(message = "El número de oficio es obligatorio")
     private String numeroOficioSolicitud;
     private LocalDate fechaRecepcionDGRMOM;
     private Boolean excepcionDGRMOM;
@@ -24,24 +23,18 @@ public class Solicitud {
     private LocalDate fechaRecepcionDictaminacion;
     private Boolean excepcionDictaminacion;
     
-    @NotBlank(message = "La dependencia/OPD es obligatoria")
     private String dependenciaOPD;
-    @NotBlank(message = "La unidad administrativa es obligatoria")
     private String unidadAdministrativa;
     private String centroCostos;
     private String capitulo;
-    @NotBlank(message = "La partida presupuestal es obligatoria")
     private String partidaPresupuestal;
     private String giro;
     
-    @NotNull(message = "El monto de la solicitud es obligatorio")
-    @Positive(message = "El monto debe ser mayor a cero")
     private BigDecimal montoSolicitud;
-    @NotBlank(message = "El tipo de solicitud es obligatorio")
     private String tipoSolicitud;
-    @NotBlank(message = "El estatus general es obligatorio")
     private String estatusGeneral;
 
+    @Column(columnDefinition = "TEXT")
     private String descripcionSolicitud;
     private Boolean procedente;
     
@@ -70,6 +63,7 @@ public class Solicitud {
     private String numeroOficioRespuesta;
     
     private String tipoExcepcion;
+    @Column(columnDefinition = "TEXT")
     private String descripcionExcepcion;
     private BigDecimal montoSuficienciaPresupuestal;
     private LocalDate fechaRespuestaExcepcion;

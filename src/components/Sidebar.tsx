@@ -1,7 +1,7 @@
 import React from 'react';
-import { LayoutDashboard, FileText, Settings, LogOut, ChevronRight, History } from 'lucide-react';
+import { LayoutDashboard, FileText, Settings, LogOut, ChevronRight, History, Upload } from 'lucide-react';
 
-export type ViewType = 'dashboard' | 'dictamenes-list' | 'dictamenes-form' | 'dictamenes-detail' | 'configuracion' | 'auditoria' | 'profile';
+export type ViewType = 'dashboard' | 'dictamenes-list' | 'dictamenes-form' | 'dictamenes-detail' | 'configuracion' | 'auditoria' | 'profile' | 'importar';
 
 interface SidebarProps {
   currentView: ViewType;
@@ -15,6 +15,7 @@ export default function Sidebar({ currentView, onChangeView, onLogout, userRole 
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMINISTRADOR', 'AUTORIZADOR', 'CAPTURISTA'] },
     { id: 'dictamenes-list', label: 'Dictámenes', icon: FileText, roles: ['ADMINISTRADOR', 'AUTORIZADOR', 'CAPTURISTA'] },
     { id: 'auditoria', label: 'Auditoría', icon: History, roles: ['ADMINISTRADOR'] },
+    { id: 'importar', label: 'Importar Excel', icon: Upload, roles: ['ADMINISTRADOR'] },
     { id: 'configuracion', label: 'Configuración', icon: Settings, roles: ['ADMINISTRADOR'] },
   ] as const;
 
