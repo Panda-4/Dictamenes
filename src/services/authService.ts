@@ -1,5 +1,12 @@
 // Centralización de URL del API — usar VITE_API_URL en .env para producción
-export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const getApiBase = () => {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+  return `http://${hostname}:8080`;
+};
+export const API_BASE = getApiBase();
 
 export interface AuthUser {
   username: string;

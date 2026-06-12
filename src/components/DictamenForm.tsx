@@ -11,7 +11,11 @@ interface DictamenFormProps {
 
 export default function DictamenForm({ onCancel, onSave, initialData, errorMessage }: DictamenFormProps) {
   const [formData, setFormData] = useState<Partial<SolicitudModel>>(
-    initialData ? { ...initialData } : {
+    initialData ? { 
+      ...initialData,
+      excepcionDGRMOM: !!initialData.excepcionDGRMOM,
+      excepcionDictaminacion: !!initialData.excepcionDictaminacion,
+    } : {
       tipoSolicitud: '',
       estatusGeneral: 'En Opinión Técnica de Subdirección de Fianzas y Seguros',
       excepcionDGRMOM: false,
@@ -235,7 +239,7 @@ export default function DictamenForm({ onCancel, onSave, initialData, errorMessa
                       onChange={handleChange}
                       className="rounded text-red-600 focus:ring-red-500 bg-white dark:bg-slate-900"
                     />
-                    Excepción
+                    Excepción: {formData.excepcionDGRMOM ? 'Sí' : 'No'}
                   </label>
                 </div>
               </div>
@@ -258,7 +262,7 @@ export default function DictamenForm({ onCancel, onSave, initialData, errorMessa
                       onChange={handleChange}
                       className="rounded text-red-600 focus:ring-red-500 bg-white dark:bg-slate-900"
                     />
-                    Excepción
+                    Excepción: {formData.excepcionDictaminacion ? 'Sí' : 'No'}
                   </label>
                 </div>
               </div>
@@ -627,22 +631,22 @@ export default function DictamenForm({ onCancel, onSave, initialData, errorMessa
                 <button 
                   type="button" 
                   onClick={handleClear}
-                  className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 rounded-xl font-semibold text-gray-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all shadow-sm"
+                  className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-gray-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all shadow-sm"
                 >
-                  <RefreshCw className="w-5 h-5" /> Limpiar
+                  <RefreshCw className="w-4 h-4" /> Limpiar
                 </button>
                 <button 
                   type="button" 
                   onClick={onCancel}
-                  className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 rounded-xl font-semibold text-gray-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all shadow-sm"
+                  className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-gray-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all shadow-sm"
                 >
-                  <X className="w-5 h-5" /> Cancelar
+                  <X className="w-4 h-4" /> Cancelar
                 </button>
                 <button 
                   type="submit" 
-                  className="flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-bold text-white bg-gem-primary hover:bg-gem-primary-dark transition-all shadow-lg shadow-gem-primary/30"
+                  className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white bg-gem-primary hover:bg-gem-primary-dark transition-all shadow-lg shadow-gem-primary/30"
                 >
-                  <Save className="w-5 h-5" /> Guardar Documento
+                  <Save className="w-4 h-4" /> Guardar
                 </button>
              </div>
           </div>

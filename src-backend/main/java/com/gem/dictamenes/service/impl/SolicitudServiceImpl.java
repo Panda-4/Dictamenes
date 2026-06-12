@@ -63,6 +63,12 @@ public class SolicitudServiceImpl implements SolicitudService {
         if (solicitud.getMontoSolicitud() == null) {
             solicitud.setMontoSolicitud(java.math.BigDecimal.ZERO);
         }
+        if (solicitud.getExcepcionDGRMOM() == null) {
+            solicitud.setExcepcionDGRMOM(false);
+        }
+        if (solicitud.getExcepcionDictaminacion() == null) {
+            solicitud.setExcepcionDictaminacion(false);
+        }
         
         normalizarCampos(solicitud);
 
