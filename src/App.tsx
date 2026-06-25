@@ -315,7 +315,7 @@ export default function App() {
         <header className="bg-gem-primary dark:bg-slate-900 border-b border-gem-primary-dark dark:border-slate-800 sticky top-0 z-40 h-16 flex items-center justify-between px-8 shadow-sm dark:shadow-slate-950 print:hidden">
            <div className="text-base font-bold text-white tracking-wide uppercase">
              {currentView === 'dashboard' && 'OFICIALÍA MAYOR'}
-             {currentView === 'dictamenes-list' && 'Gestión de Dictámenes'}
+             {currentView === 'dictamenes-list' && 'Gestión de Solicitudes'}
              {currentView === 'dictamenes-form' && (editingData ? 'Editar Solicitud' : 'Nueva Solicitud')}
              {currentView === 'dictamenes-detail' && 'Detalle de Solicitud'}
               {currentView === 'configuracion' && 'Configuración'}

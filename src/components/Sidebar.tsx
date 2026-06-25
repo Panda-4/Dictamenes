@@ -34,8 +34,8 @@ export default function Sidebar({ currentView, onChangeView, onLogout, userRole 
           <span className="text-white font-bold text-2xl tracking-tighter">G</span>
         </div>
         <div className="flex flex-col">
-          <span className="font-bold text-sm tracking-widest text-gem-primary dark:text-gem-secondary uppercase">DGRM</span>
-          <span className="text-xs text-gray-500 dark:text-slate-400 font-medium">Sistema de Dictámenes</span>
+          <span className="font-bold text-xs tracking-wider text-gem-primary dark:text-gem-secondary uppercase">Dirección General de Recursos Materiales</span>
+          <span className="text-[10px] text-gray-500 dark:text-slate-400 font-medium leading-tight">Sistema de Seguimiento a las Solicitudes de Dictamen</span>
         </div>
       </div>
 

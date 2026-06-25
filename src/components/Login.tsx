@@ -40,11 +40,11 @@ export default function Login({ onLogin }: LoginProps) {
           <div className="w-20 h-20 bg-gem-primary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-gem-primary/30 border border-gem-primary-light/30">
             <span className="text-white font-bold text-4xl tracking-tighter">G</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white tracking-tight">
-            Sistema de Dictámenes
+          <h1 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white tracking-tight leading-snug">
+            Sistema de Seguimiento a las Solicitudes de Dictamen
           </h1>
-          <p className="text-sm font-medium text-gray-500 dark:text-slate-400 mt-1 tracking-wide uppercase">
-            Gobierno del Estado de México • DGRM
+          <p className="text-xs md:text-sm font-medium text-gray-500 dark:text-slate-400 mt-2 tracking-wide uppercase">
+            Gobierno del Estado de México • Dirección General de Recursos Materiales
           </p>
         </div>
 

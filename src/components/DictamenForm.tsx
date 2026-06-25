@@ -100,10 +100,10 @@ export default function DictamenForm({ onCancel, onSave, initialData, errorMessa
         <div>
           <h2 className="text-3xl font-bold text-gray-800 dark:text-slate-100 tracking-tight flex items-center gap-3">
             <FileText className="w-8 h-8 text-gem-primary" />
-            Registro de Solicitud Administrativa
+            Registro de Solicitud
           </h2>
           <p className="text-sm font-medium text-gray-500 dark:text-slate-400 mt-2 tracking-wide uppercase">
-            Gobierno del Estado de México • Coordinación de Dictaminación
+            Dirección de Normatividad y Control Patrimonial
           </p>
         </div>
         <div className="text-right">

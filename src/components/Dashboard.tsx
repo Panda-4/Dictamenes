@@ -120,7 +120,7 @@ export default function Dashboard({ data, userName, onViewDetail }: DashboardPro
     <div className="w-full max-w-7xl mx-auto py-8 space-y-8">
       <div>
         <h2 className="text-3xl font-bold text-gray-800 dark:text-slate-100 tracking-tight uppercase">Dashboard</h2>
-        <p className="text-gray-500 dark:text-slate-400 mt-2 font-medium">Bienvenido, {userName}. Resumen del sistema de dictámenes.</p>
+        <p className="text-gray-500 dark:text-slate-400 mt-2 font-medium">Bienvenido, {userName}. Resumen del Sistema de Seguimiento a las Solicitudes de Dictamen.</p>
       </div>
 
       <div className="space-y-6">

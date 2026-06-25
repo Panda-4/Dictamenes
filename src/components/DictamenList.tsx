@@ -17,23 +17,34 @@ export default function DictamenList({ onCreate, onEdit, onViewDetail, onDelete,
   const [showFilters, setShowFilters] = useState(false);
   const [filterTipo, setFilterTipo] = useState('');
   const [filterEstatus, setFilterEstatus] = useState('');
+  const [filterOficio, setFilterOficio] = useState('');
+  const [filterDependencia, setFilterDependencia] = useState('');
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo] = useState('');
 
   const filteredData = data.filter(d => {
-    const matchesSearch = (d.numeroOficioSolicitud || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (d.dependenciaOPD && d.dependenciaOPD.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (d.tipoSolicitud || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = !searchTerm || 
+      d.folioInterno?.toString().includes(searchTerm) ||
+      d.folioInterno?.toString().padStart(4, '0').includes(searchTerm);
     const matchesTipo = !filterTipo || d.tipoSolicitud === filterTipo;
     const matchesEstatus = !filterEstatus || d.estatusGeneral === filterEstatus;
+    const matchesOficio = !filterOficio || (d.numeroOficioSolicitud || '').toLowerCase().includes(filterOficio.toLowerCase());
+    const matchesDependencia = !filterDependencia || (d.dependenciaOPD && d.dependenciaOPD.toLowerCase().includes(filterDependencia.toLowerCase()));
     const matchesDateFrom = !filterDateFrom || (d.fechaRecepcionDGRMOM && d.fechaRecepcionDGRMOM >= filterDateFrom);
     const matchesDateTo = !filterDateTo || (d.fechaRecepcionDGRMOM && d.fechaRecepcionDGRMOM <= filterDateTo);
-    return matchesSearch && matchesTipo && matchesEstatus && matchesDateFrom && matchesDateTo;
+    return matchesSearch && matchesTipo && matchesEstatus && matchesOficio && matchesDependencia && matchesDateFrom && matchesDateTo;
   });
 
-  const activeFilters = [filterTipo, filterEstatus, filterDateFrom, filterDateTo].filter(Boolean).length;
+  const activeFilters = [filterTipo, filterEstatus, filterOficio, filterDependencia, filterDateFrom, filterDateTo].filter(Boolean).length;
 
-  const clearFilters = () => { setFilterTipo(''); setFilterEstatus(''); setFilterDateFrom(''); setFilterDateTo(''); };
+  const clearFilters = () => { 
+    setFilterTipo(''); 
+    setFilterEstatus(''); 
+    setFilterOficio('');
+    setFilterDependencia('');
+    setFilterDateFrom(''); 
+    setFilterDateTo(''); 
+  };
 
   const getStatusColor = (status: string) => {
     switch(status) {
@@ -53,8 +64,8 @@ export default function DictamenList({ onCreate, onEdit, onViewDetail, onDelete,
     <div className="w-full max-w-7xl mx-auto py-8 print:hidden">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-gray-800 dark:text-slate-100 tracking-tight">Sistema de Dictámenes</h2>
-          <p className="text-gray-500 dark:text-slate-400 mt-2 font-medium">Consulta y seguimiento de solicitudes de dictamen.</p>
+          <h2 className="text-3xl font-bold text-gray-800 dark:text-slate-100 tracking-tight">Sistema de Seguimiento a las Solicitudes de Dictamen</h2>
+          <p className="text-gray-500 dark:text-slate-400 mt-2 font-medium">Consulta y seguimiento de solicitudes</p>
         </div>
         <div className="flex gap-3 w-full md:w-auto">
           {/* Botón Exportar Excel */}
@@ -80,7 +91,7 @@ export default function DictamenList({ onCreate, onEdit, onViewDetail, onDelete,
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-slate-500" />
             <input 
               type="text" 
-              placeholder="Buscar por folio, oficio o dependencia..."
+              placeholder="Buscar por número de folio..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-700 focus:ring-2 focus:ring-gem-primary/20 focus:border-gem-primary transition-all text-sm text-gray-800 dark:text-slate-200 placeholder:text-gray-400 dark:placeholder:text-slate-500"
@@ -98,7 +109,7 @@ export default function DictamenList({ onCreate, onEdit, onViewDetail, onDelete,
         {/* Filter Panel */}
         {showFilters && (
           <div className="px-6 pb-4 border-t border-gray-100 dark:border-slate-700 pt-4 animate-in slide-in-from-top-2">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Tipo de Solicitud</label>
                 <select value={filterTipo} onChange={e => setFilterTipo(e.target.value)} className={`w-full ${selectCls}`}>
@@ -120,6 +131,26 @@ export default function DictamenList({ onCreate, onEdit, onViewDetail, onDelete,
                   <option value="En autorización de la OM">En autorización de la OM</option>
                   <option value="Concluido Entregado a dependencia solicitante">Concluido Entregado</option>
                 </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Número de Oficio</label>
+                <input 
+                  type="text" 
+                  placeholder="Ej. OM/001/2026"
+                  value={filterOficio} 
+                  onChange={e => setFilterOficio(e.target.value)} 
+                  className={`w-full ${selectCls}`} 
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Dependencia</label>
+                <input 
+                  type="text" 
+                  placeholder="Ej. Secretaría de Finanzas"
+                  value={filterDependencia} 
+                  onChange={e => setFilterDependencia(e.target.value)} 
+                  className={`w-full ${selectCls}`} 
+                />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Fecha Desde</label>
