@@ -29,13 +29,13 @@ export default function Sidebar({ currentView, onChangeView, onLogout, userRole 
   return (
     <div className="w-64 flex-shrink-0 bg-white dark:bg-slate-950 text-gray-800 dark:text-slate-100 flex flex-col h-screen sticky top-0 border-r border-gray-200 dark:border-slate-800 shadow-sm dark:shadow-slate-900/50 relative z-20 print:hidden">
       {/* Logo / Brand */}
-      <div className="p-6 flex items-center gap-3 border-b border-gray-100 dark:border-slate-800">
-        <div className="w-10 h-10 bg-gem-primary rounded-xl flex items-center justify-center shadow-sm">
-          <span className="text-white font-bold text-2xl tracking-tighter">G</span>
+      <div className="p-4 flex items-start gap-3 border-b border-gray-100 dark:border-slate-800">
+        <div className="w-8 h-8 shrink-0 bg-gem-primary rounded-lg flex items-center justify-center shadow-sm mt-0.5">
+          <span className="text-white font-bold text-lg tracking-tighter">G</span>
         </div>
-        <div className="flex flex-col">
-          <span className="font-bold text-xs tracking-wider text-gem-primary dark:text-gem-secondary uppercase">Dirección General de Recursos Materiales</span>
-          <span className="text-[10px] text-gray-500 dark:text-slate-400 font-medium leading-tight">Sistema de Seguimiento a las Solicitudes de Dictamen</span>
+        <div className="flex flex-col gap-0.5">
+          <span className="font-bold text-[11px] leading-tight text-gem-primary dark:text-gem-secondary uppercase">Dirección General de Recursos Materiales</span>
+          <span className="text-[9px] text-gray-500 dark:text-slate-400 font-medium leading-tight">Sistema de Seguimiento a las Solicitudes de Dictamen</span>
         </div>
       </div>
 
