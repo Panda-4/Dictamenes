@@ -1,0 +1,6 @@
+{
+  "name": "Sistema de Dictámenes GEM",
+  "description": "Sistema web de seguimiento de solicitudes de dictámenes administrativos para el Gobierno del Estado de México con captura, búsqueda y backend en Java.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

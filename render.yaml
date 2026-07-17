@@ -1,0 +1,69 @@
+services:
+  # ---------------------------------------------
+  # Frontend - Static Site (React/Vite)
+  # ---------------------------------------------
+  - type: web
+    name: dictamenes-frontend
+    runtime: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: dictamenes-backend
+          envVarKey: RENDER_EXTERNAL_URL
+
+  # ---------------------------------------------
+  # Backend - Spring Boot
+  # ---------------------------------------------
+  - type: web
+    name: dictamenes-backend
+    runtime: docker
+    rootDir: src-backend
+    envVars:
+      - key: DB_HOST
+        fromDatabase:
+          name: dictamenes-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: dictamenes-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: dictamenes-db
+          property: database
+      - key: DB_URL
+        # Generar URL de JDBC para PostgreSQL a partir del Host, Puerto y Nombre.
+        value: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+      - key: DB_USERNAME
+        fromDatabase:
+          name: dictamenes-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: dictamenes-db
+          property: password
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: dictamenes-frontend
+          envVarKey: RENDER_EXTERNAL_URL
+
+databases:
+  # ---------------------------------------------
+  # Base de Datos - PostgreSQL
+  # ---------------------------------------------
+  - name: dictamenes-db
+    plan: free # El plan gratuito caduca en 90 días o es por horas, dependiendo de Render
+    databaseName: dictamenes
+    user: admin_dictamenes

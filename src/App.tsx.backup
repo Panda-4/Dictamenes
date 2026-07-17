@@ -1,0 +1,448 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import Sidebar, { ViewType } from './components/Sidebar';
+import Dashboard from './components/Dashboard';
+import DictamenList from './components/DictamenList';
+import DictamenForm from './components/DictamenForm';
+import DictamenDetalle from './components/DictamenDetalle';
+import Configuracion from './components/Configuracion';
+import Auditoria from './components/Auditoria';
+import Login from './components/Login';
+import ConfirmModal, { ConfirmModalItem } from './components/ConfirmModal';
+import ToastContainer, { ToastItem } from './components/Toast';
+import { SolicitudModel } from './types';
+import { Moon, Sun, Bell } from 'lucide-react';
+import { login as authLogin, logout as authLogout, getUser, isAuthenticated, authFetch, AuthUser, API_BASE, setOnSessionExpired } from './services/authService';
+
+export default function App() {
+  const [currentView, setCurrentView] = useState<ViewType>('dashboard');
+  const [editingData, setEditingData] = useState<SolicitudModel | null>(null);
+  const [detailData, setDetailData] = useState<SolicitudModel | null>(null);
+  const [data, setData] = useState<SolicitudModel[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(getUser());
+  const [loggedIn, setLoggedIn] = useState(isAuthenticated());
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [saveError, setSaveError] = useState('');
+
+  // Estados para notificaciones del header
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const unreadCount = notifications.length;
+
+  // ===== CONFIRM MODAL STATES =====
+  const [pendingSave, setPendingSave] = useState<SolicitudModel | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+
+  // ===== TOAST STATES =====
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+
+  const addToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    const id = Date.now() + Math.random();
+    setToasts(prev => [...prev, { id, message, type }]);
+  }, []);
+
+  const dismissToast = useCallback((id: number) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  const fetchNotifications = async () => {
+    if (!loggedIn) return;
+    try {
+      const res = await authFetch(`${API_BASE}/api/notificaciones`);
+      if (res.ok) {
+        setNotifications(await res.json());
+      }
+    } catch (e) {
+      console.error('Error fetching notifs:', e);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      const res = await authFetch(`${API_BASE}/api/notificaciones/leer-todas`, { method: 'PUT' });
+      if (res.ok) {
+        setNotifications([]);
+        setShowNotifications(false);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Polling para notificaciones
+  useEffect(() => {
+    if (loggedIn && (currentUser?.rol === 'ADMINISTRADOR' || currentUser?.rol === 'AUTORIZADOR')) {
+      fetchNotifications();
+      const interval = setInterval(fetchNotifications, 30000); // 30s
+      return () => clearInterval(interval);
+    }
+  }, [loggedIn, currentUser?.rol]);
+
+  // Registrar interceptor global para sesión expirada
+  useEffect(() => {
+    setOnSessionExpired(() => {
+      setCurrentUser(null);
+      setLoggedIn(false);
+      setData([]);
+      setCurrentView('dashboard');
+    });
+  }, []);
+
+  useEffect(() => {
+    if (loggedIn) {
+      fetchData();
+    }
+  }, [loggedIn]);
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
+
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      const res = await authFetch(`${API_BASE}/api/solicitudes`);
+      if (res.ok) {
+        const json = await res.json();
+        setData(json);
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLogin = async (username: string, password: string) => {
+    const user = await authLogin(username, password);
+    setCurrentUser(user);
+    setLoggedIn(true);
+  };
+
+  const handleLogout = () => {
+    authLogout();
+    setCurrentUser(null);
+    setLoggedIn(false);
+    setData([]);
+    setCurrentView('dashboard');
+  };
+
+  const handleCreate = () => {
+    setEditingData(null);
+    setSaveError('');
+    setCurrentView('dictamenes-form');
+  };
+
+  const handleEdit = (solicitud: SolicitudModel) => {
+    setEditingData(solicitud);
+    setSaveError('');
+    setCurrentView('dictamenes-form');
+  };
+
+  // ===== SAVE FLOW: Form → Confirm Modal → Execute =====
+  const handleSave = (solicitud: SolicitudModel) => {
+    setSaveError('');
+    setPendingSave(solicitud);
+    setShowSaveConfirm(true);
+  };
+
+  const executeSave = async () => {
+    if (!pendingSave) return;
+    setConfirmLoading(true);
+    try {
+      let res: Response;
+      if (pendingSave.folioInterno) {
+        res = await authFetch(`${API_BASE}/api/solicitudes/${pendingSave.folioInterno}`, {
+          method: 'PUT',
+          body: JSON.stringify(pendingSave)
+        });
+      } else {
+        res = await authFetch(`${API_BASE}/api/solicitudes`, {
+          method: 'POST',
+          body: JSON.stringify(pendingSave)
+        });
+      }
+
+      if (res.ok) {
+        const saved = await res.json();
+        if (pendingSave.folioInterno) {
+          setData(data.map(d => d.folioInterno === saved.folioInterno ? saved : d));
+          addToast(`Solicitud #${saved.folioInterno} actualizada exitosamente`, 'success');
+        } else {
+          setData([saved, ...data]);
+          addToast(`Nueva solicitud #${saved.folioInterno} registrada exitosamente`, 'success');
+        }
+        setShowSaveConfirm(false);
+        setPendingSave(null);
+        setCurrentView('dictamenes-list');
+      } else {
+        const err = await res.json().catch(() => ({ error: 'Error desconocido del servidor' }));
+        const message = err.details
+          ? err.details.join('\n')
+          : err.error || err.message || 'Error al guardar la solicitud';
+        setSaveError(message);
+        setShowSaveConfirm(false);
+        setPendingSave(null);
+        addToast(message, 'error');
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+      }
+    } catch (error) {
+      console.error('Error saving data:', error);
+      setSaveError('Error de conexión al intentar guardar.');
+      setShowSaveConfirm(false);
+      setPendingSave(null);
+      addToast('Error de conexión al intentar guardar', 'error');
+    } finally {
+      setConfirmLoading(false);
+    }
+  };
+
+  // ===== DELETE FLOW: List → Confirm Modal → Execute =====
+  const handleDelete = (folioInterno: number) => {
+    setPendingDeleteId(folioInterno);
+    setShowDeleteConfirm(true);
+  };
+
+  const executeDelete = async () => {
+    if (pendingDeleteId === null) return;
+    setConfirmLoading(true);
+    try {
+      const res = await authFetch(`${API_BASE}/api/solicitudes/${pendingDeleteId}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        setData(data.filter(d => d.folioInterno !== pendingDeleteId));
+        addToast(`Solicitud #${pendingDeleteId} eliminada correctamente`, 'success');
+      } else {
+        if (res.status === 403) {
+          addToast('No tiene permisos para eliminar. Solo Administradores pueden realizar esta acción.', 'error');
+        } else {
+          addToast('Error al intentar eliminar el registro.', 'error');
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting:', error);
+      addToast('Error de conexión al intentar eliminar.', 'error');
+    } finally {
+      setConfirmLoading(false);
+      setShowDeleteConfirm(false);
+      setPendingDeleteId(null);
+    }
+  };
+
+  // Helper: build data items for save confirm modal
+  const buildSaveItems = (): ConfirmModalItem[] => {
+    if (!pendingSave) return [];
+    const items: ConfirmModalItem[] = [];
+    if (pendingSave.folioInterno) items.push({ label: 'Folio', value: `#${pendingSave.folioInterno}` });
+    if (pendingSave.tipoSolicitud) items.push({ label: 'Tipo', value: pendingSave.tipoSolicitud });
+    if (pendingSave.dependenciaOPD) items.push({ label: 'Dependencia', value: pendingSave.dependenciaOPD });
+    if (pendingSave.montoSolicitud) items.push({ label: 'Monto', value: `$${Number(pendingSave.montoSolicitud).toLocaleString('es-MX', { minimumFractionDigits: 2 })}` });
+    if (pendingSave.estatusGeneral) items.push({ label: 'Estatus', value: pendingSave.estatusGeneral });
+    if (pendingSave.numeroOficioSolicitud) items.push({ label: 'Nro. Oficio', value: pendingSave.numeroOficioSolicitud });
+    return items;
+  };
+
+  // Helper: build data items for delete confirm modal
+  const buildDeleteItems = (): ConfirmModalItem[] => {
+    if (pendingDeleteId === null) return [];
+    const record = data.find(d => d.folioInterno === pendingDeleteId);
+    if (!record) return [{ label: 'Folio', value: `#${pendingDeleteId}` }];
+    const items: ConfirmModalItem[] = [
+      { label: 'Folio', value: `#${record.folioInterno}` },
+    ];
+    if (record.tipoSolicitud) items.push({ label: 'Tipo', value: record.tipoSolicitud });
+    if (record.dependenciaOPD) items.push({ label: 'Dependencia', value: record.dependenciaOPD });
+    if (record.montoSolicitud) items.push({ label: 'Monto', value: `$${Number(record.montoSolicitud).toLocaleString('es-MX', { minimumFractionDigits: 2 })}` });
+    if (record.numeroOficioSolicitud) items.push({ label: 'Nro. Oficio', value: record.numeroOficioSolicitud });
+    if (record.estatusGeneral) items.push({ label: 'Estatus', value: record.estatusGeneral });
+    return items;
+  };
+
+  // If not authenticated, show Login
+  if (!loggedIn) {
+    return <Login onLogin={handleLogin} />;
+  }
+
+  const userRole = currentUser?.rol || '';
+
+  return (
+    <div className={`flex min-h-screen font-sans ${isDarkMode ? 'dark bg-slate-900 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
+      <Sidebar
+        currentView={currentView}
+        onChangeView={setCurrentView}
+        onLogout={handleLogout}
+        userRole={userRole}
+      />
+
+      <div className="flex-1 flex flex-col min-h-screen relative overflow-x-hidden bg-gradient-to-br from-slate-50 via-rose-50/30 to-slate-100 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
+
+        {/* Top Header Unified */}
+        <header className="bg-gem-primary border-b border-gem-primary-dark sticky top-0 z-40 h-16 flex items-center justify-between px-8 shadow-lg print:hidden">
+           <div className="text-base font-bold text-white tracking-wide uppercase">
+             {currentView === 'dashboard' && 'OFICIALÍA MAYOR'}
+             {currentView === 'dictamenes-list' && 'Gestión de Dictámenes'}
+             {currentView === 'dictamenes-form' && (editingData ? 'Editar Solicitud' : 'Nueva Solicitud')}
+             {currentView === 'dictamenes-detail' && 'Detalle de Solicitud'}
+             {currentView === 'configuracion' && 'Configuración'}
+             {currentView === 'auditoria' && 'Auditoría'}
+           </div>
+           <div className="flex items-center gap-6 text-sm font-medium">
+             <button 
+               onClick={() => setIsDarkMode(!isDarkMode)} 
+               className="p-2 rounded-full transition-colors bg-white/10 text-white hover:bg-white/20"
+               title="Alternar Modo Oscuro"
+             >
+               {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+             </button>
+
+             {/* Notificaciones (Solo Administradores y Autorizadores) */}
+             {(userRole === 'ADMINISTRADOR' || userRole === 'AUTORIZADOR') && (
+               <div className="relative">
+                 <button 
+                   onClick={() => setShowNotifications(!showNotifications)}
+                   className={`p-2 rounded-full transition-colors relative ${showNotifications ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}
+                 >
+                   <Bell className="w-5 h-5" />
+                   {unreadCount > 0 && (
+                     <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-yellow-400 rounded-full border-2 border-gem-primary"></span>
+                   )}
+                 </button>
+
+                 {/* Dropdown Notificaciones */}
+                 {showNotifications && (
+                   <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
+                     <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-900">
+                       <h3 className="font-bold text-gray-800 dark:text-slate-100">Notificaciones</h3>
+                       {unreadCount > 0 && (
+                         <button onClick={markAllAsRead} className="text-xs font-semibold text-gem-primary hover:text-gem-primary-dark">
+                           Marcar leídas
+                         </button>
+                       )}
+                     </div>
+                     <div className="max-h-[300px] overflow-y-auto">
+                       {notifications.length === 0 ? (
+                         <div className="p-6 text-center text-gray-500 text-sm">
+                           No tienes notificaciones pendientes
+                         </div>
+                       ) : (
+                         <div className="divide-y divide-gray-50">
+                           {notifications.map(notif => (
+                             <div key={notif.id} className="p-4 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors flex gap-3">
+                               <div className="w-2 h-2 mt-1.5 rounded-full bg-gem-primary shrink-0"></div>
+                               <div>
+                                 <p className="text-sm text-gray-800 dark:text-slate-200 font-medium leading-snug">{notif.mensaje}</p>
+                                 <p className="text-xs text-gray-400 mt-1">
+                                   {new Date(notif.fecha).toLocaleString()}
+                                 </p>
+                               </div>
+                             </div>
+                           ))}
+                         </div>
+                       )}
+                     </div>
+                   </div>
+                 )}
+               </div>
+             )}
+
+             <div className="text-right hidden sm:block">
+               <div className="font-bold leading-tight text-white">{currentUser?.nombreCompleto || 'Usuario'}</div>
+               <div className="text-xs text-white/70">{userRole}</div>
+             </div>
+             <div className="w-9 h-9 rounded-full bg-white/20 border border-white/30 text-white shadow-sm flex items-center justify-center font-bold">
+               {(currentUser?.nombreCompleto || 'U').charAt(0).toUpperCase()}
+             </div>
+           </div>
+        </header>
+
+        {/* Main Content Area */}
+        <main className="flex-1 p-6 lg:p-8 print:p-0 print:m-0">
+          {/* Loading Spinner Global */}
+          {isLoading && currentView !== 'configuracion' && currentView !== 'auditoria' && (
+            <div className="flex items-center justify-center py-32">
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-12 h-12 border-4 border-gem-primary/20 border-t-gem-primary rounded-full animate-spin"></div>
+                <p className="text-sm font-medium text-gray-500">Cargando datos...</p>
+              </div>
+            </div>
+          )}
+
+          {(!isLoading || currentView === 'configuracion' || currentView === 'auditoria') && (
+            <>
+              {currentView === 'dashboard' && <Dashboard data={data} userName={currentUser?.nombreCompleto || 'Usuario'} />}
+              
+              {currentView === 'dictamenes-list' && (
+                <DictamenList 
+                  data={data} 
+                  onCreate={handleCreate} 
+                  onEdit={handleEdit}
+                  onViewDetail={(solicitud) => { setDetailData(solicitud); setCurrentView('dictamenes-detail'); }}
+                  onDelete={handleDelete}
+                  userRole={userRole}
+                />
+              )}
+
+              {currentView === 'dictamenes-form' && (
+                <DictamenForm 
+                  onCancel={() => { setSaveError(''); setCurrentView('dictamenes-list'); }}
+                  onSave={handleSave}
+                  initialData={editingData}
+                  errorMessage={saveError}
+                />
+              )}
+
+              {currentView === 'dictamenes-detail' && detailData && (
+                <DictamenDetalle
+                  solicitud={detailData}
+                  onBack={() => setCurrentView('dictamenes-list')}
+                  onEdit={(solicitud) => { setDetailData(null); handleEdit(solicitud); }}
+                  userRole={userRole}
+                />
+              )}
+
+              {currentView === 'configuracion' && <Configuracion />}
+              
+              {currentView === 'auditoria' && <Auditoria />}
+            </>
+          )}
+        </main>
+      </div>
+
+      {/* ===== CONFIRM MODALS ===== */}
+      <ConfirmModal
+        isOpen={showSaveConfirm}
+        onClose={() => { setShowSaveConfirm(false); setPendingSave(null); }}
+        onConfirm={executeSave}
+        title={pendingSave?.folioInterno ? 'Confirmar Actualización' : 'Confirmar Nuevo Registro'}
+        message={pendingSave?.folioInterno 
+          ? 'Se actualizarán los siguientes datos de la solicitud:'
+          : 'Se registrará una nueva solicitud con los siguientes datos:'}
+        variant={pendingSave?.folioInterno ? 'edit' : 'save'}
+        items={buildSaveItems()}
+        loading={confirmLoading}
+      />
+
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        onClose={() => { setShowDeleteConfirm(false); setPendingDeleteId(null); }}
+        onConfirm={executeDelete}
+        title="Confirmar Eliminación"
+        message="Esta acción es irreversible. Se eliminará permanentemente el siguiente registro:"
+        variant="delete"
+        items={buildDeleteItems()}
+        loading={confirmLoading}
+      />
+
+      {/* ===== TOAST NOTIFICATIONS ===== */}
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+    </div>
+  );
+}
