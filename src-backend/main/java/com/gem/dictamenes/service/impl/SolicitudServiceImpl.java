@@ -60,7 +60,8 @@ public class SolicitudServiceImpl implements SolicitudService {
         Solicitud saved = solicitudRepository.save(solicitud);
 
         if (isNew) {
-            detalle = "Nueva solicitud creada — Tipo: " + saved.getTipoSolicitud()
+            detalle = "Nueva solicitud creada — Folio: " + saved.getFolioInterno()
+                    + " — Tipo: " + saved.getTipoSolicitud()
                     + ", Dependencia: " + saved.getDependenciaOPD()
                     + ", Monto: $" + saved.getMontoSolicitud()
                     + ", Oficio: " + saved.getNumeroOficioSolicitud();
@@ -186,6 +187,7 @@ public class SolicitudServiceImpl implements SolicitudService {
 
     @Override
     public void delete(Long id) {
+        if (id == null) return;
         // Capture record details before deletion for audit trail
         Solicitud solicitud = solicitudRepository.findById(id).orElse(null);
         String detalle;
@@ -236,5 +238,12 @@ public class SolicitudServiceImpl implements SolicitudService {
         } catch (Exception e) {
             System.err.println("Error guardando log de auditoría: " + e.getMessage());
         }
+    }
+
+    @Override
+    public List<AuditoriaLog> getHistorial(Long id) {
+        Solicitud solicitud = solicitudRepository.findById(id).orElse(null);
+        String oficio = solicitud != null ? solicitud.getNumeroOficioSolicitud() : "";
+        return auditoriaRepository.findBySolicitudIdAndOficio(id, oficio);
     }
 }

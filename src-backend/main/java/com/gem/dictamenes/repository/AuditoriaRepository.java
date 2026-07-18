@@ -9,9 +9,16 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Repository
 public interface AuditoriaRepository extends JpaRepository<AuditoriaLog, Long> {
+
+    @Query("SELECT a FROM AuditoriaLog a WHERE a.entidad = 'Solicitud' AND (" +
+           "a.detalle LIKE CONCAT('%Folio: ', :id, '%') OR " +
+           "(:oficio IS NOT NULL AND :oficio != '' AND a.detalle LIKE CONCAT('%Oficio: ', :oficio, '%'))" +
+           ") ORDER BY a.fecha ASC")
+    List<AuditoriaLog> findBySolicitudIdAndOficio(@Param("id") Long id, @Param("oficio") String oficio);
 
     @Query("SELECT a FROM AuditoriaLog a WHERE " +
            "(:accion IS NULL OR :accion = '' OR a.accion = :accion) AND " +

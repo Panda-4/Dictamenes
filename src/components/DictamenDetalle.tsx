@@ -1,6 +1,7 @@
-import React from 'react';
-import { Download, ChevronLeft, Edit } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Download, ChevronLeft, Edit, History, X, CheckCircle2, Clock, XCircle, AlertCircle, ArrowRight } from 'lucide-react';
 import { SolicitudModel } from '../types';
+import { authFetch, API_BASE } from '../services/authService';
 
 interface DictamenDetalleProps {
   solicitud: SolicitudModel;
@@ -10,6 +11,43 @@ interface DictamenDetalleProps {
 }
 
 export default function DictamenDetalle({ solicitud, onBack, onEdit, userRole }: DictamenDetalleProps) {
+  const [showHistorial, setShowHistorial] = useState(false);
+  const [historialLogs, setHistorialLogs] = useState<any[]>([]);
+  const [loadingHistorial, setLoadingHistorial] = useState(false);
+
+  useEffect(() => {
+    if (showHistorial && solicitud.folioInterno) {
+      fetchHistorial();
+    }
+  }, [showHistorial, solicitud.folioInterno]);
+
+  const fetchHistorial = async () => {
+    try {
+      setLoadingHistorial(true);
+      const res = await authFetch(`${API_BASE}/api/solicitudes/${solicitud.folioInterno}/historial`);
+      if (res.ok) {
+        const data = await res.json();
+        setHistorialLogs(data.map((log: any) => ({
+          ...log,
+          fecha: log.fecha ? log.fecha.replace('T', ' ').substring(0, 19) : ''
+        })));
+      }
+    } catch (e) {
+      console.error('Error fetching request history:', e);
+    } finally {
+      setLoadingHistorial(false);
+    }
+  };
+
+  const parseCambios = (json: string | null) => {
+    if (!json) return [];
+    try {
+      return JSON.parse(json);
+    } catch {
+      return [];
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch(status) {
       case 'En Opinión Técnica de Subdirección de Fianzas y Seguros': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800';
@@ -32,6 +70,12 @@ export default function DictamenDetalle({ solicitud, onBack, onEdit, userRole }:
           <ChevronLeft className="w-5 h-5" /> Volver a la lista
         </button>
         <div className="flex items-center gap-3 w-full md:w-auto">
+          <button 
+            onClick={() => setShowHistorial(true)}
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-slate-900 bg-gem-secondary hover:bg-gem-secondary-light transition-all shadow-md shadow-gem-secondary/20"
+          >
+            <History className="w-4 h-4 text-slate-900" /> Ver Seguimiento
+          </button>
           <button 
             onClick={() => window.print()} 
             className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all shadow-sm"
@@ -184,6 +228,236 @@ export default function DictamenDetalle({ solicitud, onBack, onEdit, userRole }:
           "2026. Año del Humanismo Mexicano en el Estado de México."
         </div>
       </div>
+
+      {/* Modal de Historial / Seguimiento */}
+      {showHistorial && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+            
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-900/50 flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-bold text-gray-800 dark:text-slate-100 flex items-center gap-2">
+                  <History className="w-5 h-5 text-gem-primary dark:text-gem-secondary" />
+                  Seguimiento de la Solicitud
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                  Folio: #{solicitud.folioInterno?.toString().padStart(4, '0')} | Oficio: {solicitud.numeroOficioSolicitud}
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowHistorial(false)}
+                className="p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-all animate-none"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+              
+              {/* Columna Izquierda: Historial/Bitácora */}
+              <div className="md:col-span-2 space-y-6">
+                <h4 className="text-sm font-extrabold text-gem-primary dark:text-gem-secondary uppercase tracking-widest border-b-2 border-gray-100 dark:border-slate-700 pb-2">
+                  Historial del Expediente
+                </h4>
+
+                {loadingHistorial ? (
+                  <div className="flex flex-col items-center justify-center py-16 gap-3">
+                    <div className="w-8 h-8 border-4 border-gem-primary/20 border-t-gem-primary rounded-full animate-spin"></div>
+                    <p className="text-xs text-gray-400 font-medium">Cargando historial...</p>
+                  </div>
+                ) : historialLogs.length === 0 ? (
+                  <div className="text-center py-16 text-gray-500 dark:text-slate-400">
+                    <History className="w-12 h-12 mx-auto text-gray-300 dark:text-slate-600 mb-3" />
+                    <p className="text-sm font-medium">No se encontraron registros de auditoría para esta solicitud.</p>
+                  </div>
+                ) : (
+                  <div className="relative pl-6 border-l-2 border-gray-200 dark:border-slate-700 space-y-8 ml-3">
+                    {historialLogs.map((log) => {
+                      const cambios = parseCambios(log.cambiosDetalle);
+                      const isCreation = log.accion === 'CREACIÓN';
+                      const isDelete = log.accion === 'ELIMINACIÓN';
+                      
+                      return (
+                        <div key={log.id} className="relative group">
+                          {/* Circle Indicator */}
+                          <div className={`absolute left-[-32px] top-1.5 w-4 h-4 rounded-full border-4 border-white dark:border-slate-800 ${
+                            isCreation ? 'bg-emerald-500' : isDelete ? 'bg-rose-500' : 'bg-gem-secondary'
+                          }`} />
+
+                          {/* Log Content Card */}
+                          <div className="bg-gray-50/50 dark:bg-slate-900/25 p-4 rounded-xl border border-gray-100 dark:border-slate-800/80">
+                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-2">
+                              <div>
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                  isCreation ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                                  isDelete ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400' :
+                                  'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
+                                }`}>
+                                  {log.accion}
+                                </span>
+                                <h5 className="font-bold text-gray-800 dark:text-slate-200 text-sm mt-1">
+                                  {log.usuario} <span className="text-xs font-normal text-gray-500 dark:text-slate-400">({log.rol})</span>
+                                </h5>
+                              </div>
+                              <span className="text-[11px] font-mono text-gray-400 dark:text-slate-500">
+                                {log.fecha}
+                              </span>
+                            </div>
+
+                            <p className="text-xs text-gray-600 dark:text-slate-400 leading-relaxed mb-1">
+                              {log.detalle}
+                            </p>
+
+                            {/* Detalle de cambios si existen */}
+                            {cambios.length > 0 && (
+                              <div className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-800 space-y-1.5">
+                                <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider block mb-1">
+                                  Campos Modificados
+                                </span>
+                                <div className="grid grid-cols-1 gap-1.5">
+                                  {cambios.map((c: any, idx: number) => (
+                                    <div key={idx} className="flex flex-wrap items-center gap-1.5 text-[11px] bg-white dark:bg-slate-900/80 p-1.5 px-2.5 rounded-lg border border-gray-100 dark:border-slate-800">
+                                      <span className="font-semibold text-gray-700 dark:text-slate-300">{c.campo}:</span>
+                                      <span className="text-rose-600 dark:text-rose-400 line-through truncate max-w-[120px]" title={c.antes}>{c.antes}</span>
+                                      <ArrowRight className="w-3 h-3 text-gray-400 shrink-0" />
+                                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold truncate max-w-[120px]" title={c.despues}>{c.despues}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Columna Derecha: Checklist e Info */}
+              <div className="space-y-6">
+                {/* Card de Estado de Validación */}
+                <div className="bg-slate-900 text-slate-100 p-5 rounded-2xl border border-slate-800 shadow-lg">
+                  <h4 className="text-xs font-bold text-gem-secondary uppercase tracking-widest border-b border-slate-800 pb-3 mb-4 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4" /> Estado de Validación
+                  </h4>
+
+                  {/* Checklist Items */}
+                  <div className="space-y-4">
+                    {[
+                      {
+                        title: 'Recepción DGRM-OM',
+                        detail: solicitud.fechaRecepcionDGRMOM ? `Ingresado: ${new Date(solicitud.fechaRecepcionDGRMOM).toLocaleDateString()}` : 'Pendiente de registrar recepción',
+                        status: solicitud.fechaRecepcionDGRMOM ? 'completed' : 'pending'
+                      },
+                      {
+                        title: 'Recepción Dictaminación',
+                        detail: solicitud.fechaRecepcionDictaminacion ? `Recibido: ${new Date(solicitud.fechaRecepcionDictaminacion).toLocaleDateString()}` : 'Pendiente de ingresar a Dictaminación',
+                        status: solicitud.fechaRecepcionDictaminacion ? 'completed' : 'pending'
+                      },
+                      {
+                        title: 'Dictamen de Procedencia',
+                        detail: solicitud.procedente === true ? 'Dictaminado Procedente' : solicitud.procedente === false ? 'Dictaminado No Procedente' : 'Pendiente de estudio técnico',
+                        status: solicitud.procedente === true ? 'completed' : solicitud.procedente === false ? 'failed' : 'pending'
+                      },
+                      {
+                        title: 'Autorización de la OM',
+                        detail: solicitud.cuentaAutorizacionOM === true 
+                          ? `Autorizado: Oficio ${solicitud.numeroOficioAutorizacion || 's/n'}` 
+                          : solicitud.cuentaAutorizacionOM === false 
+                            ? `No Autorizado: Oficio ${solicitud.numeroOficioRespuesta || 's/n'}` 
+                            : 'Pendiente de dictamen / resolución',
+                        status: solicitud.cuentaAutorizacionOM === true ? 'completed' : solicitud.cuentaAutorizacionOM === false ? 'failed' : 'pending'
+                      },
+                      {
+                        title: 'Firma / Entrega Final',
+                        detail: solicitud.estatusGeneral === 'Concluido Entregado a dependencia solicitante' 
+                          ? 'Entregado a Dependencia Solicitante' 
+                          : `Estatus: ${solicitud.estatusGeneral}`,
+                        status: solicitud.estatusGeneral === 'Concluido Entregado a dependencia solicitante' ? 'completed' : 'in-progress'
+                      }
+                    ].map((item, index) => (
+                      <div key={index} className="flex gap-3 items-start">
+                        {item.status === 'completed' && (
+                          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                        )}
+                        {item.status === 'failed' && (
+                          <XCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                        )}
+                        {item.status === 'pending' && (
+                          <Clock className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
+                        )}
+                        {item.status === 'in-progress' && (
+                          <Clock className="w-5 h-5 text-amber-400 shrink-0 mt-0.5 animate-pulse" />
+                        )}
+
+                        <div>
+                          <p className={`text-xs font-bold ${item.status === 'completed' ? 'text-slate-200' : item.status === 'failed' ? 'text-rose-300' : 'text-slate-400'}`}>
+                            {item.title}
+                          </p>
+                          <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                            {item.detail}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Card de Información de Registro */}
+                <div className="bg-gray-50/50 dark:bg-slate-900/50 p-5 rounded-2xl border border-gray-100 dark:border-slate-700">
+                  <h4 className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800 pb-3 mb-4">
+                    Información de Registro
+                  </h4>
+
+                  <div className="space-y-3.5 text-xs">
+                    <div>
+                      <span className="text-gray-400 dark:text-slate-500 block mb-0.5">Creado por</span>
+                      <p className="text-gray-800 dark:text-slate-200 font-semibold">
+                        {historialLogs.find(l => l.accion === 'CREACIÓN')?.usuario || 'SISTEMA'}
+                      </p>
+                      <p className="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5">
+                        Rol: {historialLogs.find(l => l.accion === 'CREACIÓN')?.rol || 'ADMINISTRADOR'}
+                      </p>
+                    </div>
+
+                    <div>
+                      <span className="text-gray-400 dark:text-slate-500 block mb-0.5">Fecha de Registro</span>
+                      <p className="text-gray-800 dark:text-slate-200 font-semibold">
+                        {solicitud.fechaRecepcionDGRMOM 
+                          ? new Date(solicitud.fechaRecepcionDGRMOM).toLocaleDateString('es-MX', {day: 'numeric', month: 'long', year: 'numeric'}) 
+                          : historialLogs.find(l => l.accion === 'CREACIÓN')?.fecha?.substring(0, 10) || '-'}
+                      </p>
+                    </div>
+
+                    <div>
+                      <span className="text-gray-400 dark:text-slate-500 block mb-0.5">ID del Sistema</span>
+                      <p className="text-gray-800 dark:text-slate-200 font-semibold font-mono">
+                        sol_#{solicitud.folioInterno?.toString().padStart(4, '0')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-gray-100 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-900/50 flex justify-end">
+              <button 
+                onClick={() => setShowHistorial(false)}
+                className="px-5 py-2 rounded-xl font-bold text-white bg-gem-primary hover:bg-gem-primary-dark transition-all shadow-md shadow-gem-primary/20 text-xs"
+              >
+                Cerrar
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }
