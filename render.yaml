@@ -58,6 +58,8 @@ services:
           type: web
           name: dictamenes-frontend
           envVarKey: RENDER_EXTERNAL_URL
+      - key: ADMIN_DEFAULT_PASSWORD
+        sync: false   # Definir manualmente en el Dashboard de Render (valor secreto)
 
 databases:
   # ---------------------------------------------
