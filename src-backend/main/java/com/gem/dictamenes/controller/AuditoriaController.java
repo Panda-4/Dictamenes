@@ -76,10 +76,13 @@ public class AuditoriaController {
     ) throws IOException {
         response.setContentType("text/csv; charset=UTF-8");
         response.setHeader("Content-Disposition", "attachment; filename=\"auditoria_logs.csv\"");
+        // Límite máximo de 10,000 registros por exportación para evitar OutOfMemoryError
+        // en servidores con memoria restringida. Usar filtros de fecha para rangos grandes.
+        response.setHeader("X-Export-Limit", "10000");
 
         List<AuditoriaLog> logs = repository.findByFilters(
                 accion, usuario, fechaDesde, fechaHasta,
-                PageRequest.of(0, 100000, Sort.by("id").descending())
+                PageRequest.of(0, 10000, Sort.by("id").descending())
         ).getContent();
 
         PrintWriter writer = response.getWriter();

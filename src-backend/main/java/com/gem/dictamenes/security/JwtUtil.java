@@ -2,8 +2,9 @@ package com.gem.dictamenes.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+
+import java.nio.charset.StandardCharsets;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
@@ -58,7 +59,10 @@ public class JwtUtil {
     }
 
     private SecretKey getSigningKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secret);
+        // Usar UTF-8 para soportar cualquier tipo de secreto (incluidos los generados
+        // automáticamente por plataformas como Render), sin requerir Base64 estricto.
+        // El secreto debe tener al menos 32 caracteres para HMAC-SHA256.
+        byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 }

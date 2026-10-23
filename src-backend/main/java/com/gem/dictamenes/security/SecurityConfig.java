@@ -27,6 +27,7 @@ import org.springframework.security.web.header.writers.StaticHeadersWriter;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -61,8 +62,15 @@ public class SecurityConfig {
                 .requestMatchers("/api/auditoria/**").hasRole("ADMINISTRADOR")
                 // Gestión de usuarios: solo ADMINISTRADOR
                 .requestMatchers("/api/usuarios/**").hasRole("ADMINISTRADOR")
-                // Importación: solo ADMINISTRADOR
-                .requestMatchers("/api/solicitudes/import/**").hasRole("ADMINISTRADOR")
+                // Catálogos administración: solo ADMINISTRADOR
+                .requestMatchers(HttpMethod.POST, "/api/catalogos/**").hasRole("ADMINISTRADOR")
+                .requestMatchers(HttpMethod.PUT, "/api/catalogos/**").hasRole("ADMINISTRADOR")
+                .requestMatchers(HttpMethod.PATCH, "/api/catalogos/**").hasRole("ADMINISTRADOR")
+                .requestMatchers(HttpMethod.DELETE, "/api/catalogos/**").hasRole("ADMINISTRADOR")
+                .requestMatchers("/api/catalogos/*/admin").hasRole("ADMINISTRADOR")
+                // Gestión de permisos y roles: PUT solo ADMINISTRADOR, lectura autenticada
+                .requestMatchers(HttpMethod.PUT, "/api/roles/**").hasRole("ADMINISTRADOR")
+                .requestMatchers("/api/roles/**").authenticated()
                 // Todo lo demás requiere autenticación
                 .requestMatchers("/api/**").authenticated()
                 // Recursos estáticos permitidos
@@ -98,8 +106,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("*"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        // Usar solo los orígenes configurados en FRONTEND_URL (lista separada por comas).
+        // Esto evita que sitios externos puedan hacer peticiones autenticadas.
+        List<String> allowedOrigins = Arrays.asList(frontendUrl.split(","));
+        configuration.setAllowedOriginPatterns(allowedOrigins);
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

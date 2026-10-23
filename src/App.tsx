@@ -14,6 +14,7 @@ import { Moon, Sun, Bell, User } from 'lucide-react';
 import Profile from './components/Profile';
 import ImportarExcel from './components/ImportarExcel';
 import { login as authLogin, logout as authLogout, getUser, isAuthenticated, authFetch, AuthUser, API_BASE, setOnSessionExpired } from './services/authService';
+import { getMisPermisos } from './services/permisoService';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
@@ -24,6 +25,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(getUser());
   const [loggedIn, setLoggedIn] = useState(isAuthenticated());
+  const [userPermissions, setUserPermissions] = useState<string[]>([]);
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('darkMode') === 'true');
   const [saveError, setSaveError] = useState('');
 
@@ -51,12 +53,25 @@ export default function App() {
     setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
 
+  // Referencia para rastrear notificación entrante en tiempo real
+  const prevUnreadCountRef = React.useRef<number | null>(null);
+
   const fetchNotifications = async () => {
     if (!loggedIn) return;
     try {
       const res = await authFetch(`${API_BASE}/api/notificaciones`);
       if (res.ok) {
-        setNotifications(await res.json());
+        const notifs = await res.json();
+        setNotifications(notifs);
+
+        // Si entran nuevas notificaciones mientras la sesión está abierta, notificar inmediatamente
+        if (prevUnreadCountRef.current !== null && notifs.length > prevUnreadCountRef.current) {
+          const nuevas = notifs.slice(0, notifs.length - prevUnreadCountRef.current);
+          nuevas.forEach((n: any) => {
+            addToast(`🔔 ${n.mensaje}`, 'info');
+          });
+        }
+        prevUnreadCountRef.current = notifs.length;
       }
     } catch (e) {
       console.error('Error fetching notifs:', e);
@@ -69,17 +84,55 @@ export default function App() {
       if (res.ok) {
         setNotifications([]);
         setShowNotifications(false);
+        prevUnreadCountRef.current = 0;
       }
     } catch (e) {
       console.error(e);
     }
   };
 
+  const handleNotificationClick = async (notif: any) => {
+    try {
+      // 1. Marcar como leída en backend
+      await authFetch(`${API_BASE}/api/notificaciones/${notif.id}/leer`, { method: 'PUT' });
+      setNotifications(prev => prev.filter(n => n.id !== notif.id));
+      if (prevUnreadCountRef.current !== null && prevUnreadCountRef.current > 0) {
+        prevUnreadCountRef.current -= 1;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    setShowNotifications(false);
+
+    // 2. Si tiene solicitudId, buscarla y abrir su vista de detalle
+    if (notif.solicitudId) {
+      let targetSolicitud = data.find(d => d.folioInterno === notif.solicitudId);
+      if (!targetSolicitud) {
+        // Consultar directamente al backend si no está en la lista actual
+        try {
+          const res = await authFetch(`${API_BASE}/api/solicitudes/${notif.solicitudId}`);
+          if (res.ok) {
+            targetSolicitud = await res.json();
+          }
+        } catch (e) {}
+      }
+
+      if (targetSolicitud) {
+        setDetailData(targetSolicitud);
+        setDetailBackView('dictamenes-list');
+        setCurrentView('dictamenes-detail');
+      } else {
+        setCurrentView('dictamenes-list');
+      }
+    }
+  };
+
   // Polling para notificaciones
   useEffect(() => {
-    if (loggedIn && (currentUser?.rol === 'ADMINISTRADOR' || currentUser?.rol === 'AUTORIZADOR')) {
+    if (loggedIn && (currentUser?.rol === 'ADMINISTRADOR' || currentUser?.rol === 'AUTORIZADOR' || currentUser?.rol === 'CAPTURISTA')) {
       fetchNotifications();
-      const interval = setInterval(fetchNotifications, 30000); // 30s
+      const interval = setInterval(fetchNotifications, 15000); // Consulta cada 15s
       return () => clearInterval(interval);
     }
   }, [loggedIn, currentUser?.rol]);
@@ -94,9 +147,24 @@ export default function App() {
     });
   }, []);
 
+  const fetchPermissions = async () => {
+    if (!loggedIn) return;
+    try {
+      const perms = await getMisPermisos();
+      setUserPermissions(perms);
+    } catch (e) {
+      console.error('Error fetching permissions:', e);
+    }
+  };
+
   useEffect(() => {
     if (loggedIn) {
       fetchData();
+      fetchPermissions();
+      const interval = setInterval(fetchPermissions, 30000);
+      return () => clearInterval(interval);
+    } else {
+      setUserPermissions([]);
     }
   }, [loggedIn]);
 
@@ -204,7 +272,7 @@ export default function App() {
           addToast(`Solicitud #${saved.folioInterno} actualizada exitosamente`, 'success');
         } else {
           setData([saved, ...data]);
-          addToast(`Nueva solicitud #${saved.folioInterno} registrada exitosamente`, 'success');
+          addToast('Solicitud #' + saved.folioInterno + ' guardada y turnada al área Autorizadora para su revisión', 'success');
         }
         setShowSaveConfirm(false);
         setPendingSave(null);
@@ -307,6 +375,7 @@ export default function App() {
         onChangeView={setCurrentView}
         onLogout={handleLogout}
         userRole={userRole}
+        userPermissions={userPermissions}
       />
 
       <div className="flex-1 flex flex-col min-h-screen relative overflow-x-hidden bg-gray-50 dark:bg-slate-950">
@@ -333,7 +402,7 @@ export default function App() {
              </button>
 
              {/* Notificaciones (Solo Administradores y Autorizadores) */}
-             {(userRole === 'ADMINISTRADOR' || userRole === 'AUTORIZADOR') && (
+              {(userRole === 'ADMINISTRADOR' || userRole === 'AUTORIZADOR' || userRole === 'CAPTURISTA') && (
                <div className="relative">
                  <button 
                    onClick={() => setShowNotifications(!showNotifications)}
@@ -364,12 +433,12 @@ export default function App() {
                        ) : (
                          <div className="divide-y divide-gray-50">
                            {notifications.map(notif => (
-                             <div key={notif.id} className="p-4 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors flex gap-3">
+                             <div key={notif.id} onClick={() => handleNotificationClick(notif)} className="p-3.5 hover:bg-gem-primary/5 dark:hover:bg-slate-700/60 transition-colors flex gap-3 cursor-pointer group" title="Clic para ver detalles de la solicitud">
                                <div className="w-2 h-2 mt-1.5 rounded-full bg-gem-primary shrink-0"></div>
                                <div>
                                  <p className="text-sm text-gray-800 dark:text-slate-200 font-medium leading-snug">{notif.mensaje}</p>
                                  <p className="text-xs text-gray-400 mt-1">
-                                   {new Date(notif.fecha).toLocaleString()}
+                                   {new Date(notif.fecha).toLocaleString()}</p>{notif.solicitudId && (<span className="inline-block mt-1 text-[10px] font-semibold text-gem-primary bg-gem-primary/10 px-1.5 py-0.5 rounded">Ver expediente #{notif.solicitudId} →</span>)}<p className="hidden">
                                  </p>
                                </div>
                              </div>
@@ -438,6 +507,7 @@ export default function App() {
                   }}
                   onDelete={handleDelete}
                   userRole={userRole}
+                  userPermissions={userPermissions}
                   onExportExcel={handleExportExcel}
                 />
               )}
@@ -457,6 +527,11 @@ export default function App() {
                   onBack={() => setCurrentView(detailBackView)}
                   onEdit={(solicitud) => { setDetailData(null); handleEdit(solicitud); }}
                   userRole={userRole}
+                  userPermissions={userPermissions}
+                  onUpdateSolicitud={(updated) => {
+                    setDetailData(updated);
+                    setData(prev => prev.map(d => d.folioInterno === updated.folioInterno ? updated : d));
+                  }}
                 />
               )}
 

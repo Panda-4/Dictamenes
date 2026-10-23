@@ -8,9 +8,10 @@ interface SidebarProps {
   onChangeView: (view: ViewType) => void;
   onLogout: () => void;
   userRole: string;
+  userPermissions?: string[];
 }
 
-export default function Sidebar({ currentView, onChangeView, onLogout, userRole }: SidebarProps) {
+export default function Sidebar({ currentView, onChangeView, onLogout, userRole, userPermissions }: SidebarProps) {
   const allNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMINISTRADOR', 'AUTORIZADOR', 'CAPTURISTA', 'CONSULTA'] },
     { id: 'dictamenes-list', label: 'Dictámenes', icon: FileText, roles: ['ADMINISTRADOR', 'AUTORIZADOR', 'CAPTURISTA', 'CONSULTA'] },
@@ -19,7 +20,16 @@ export default function Sidebar({ currentView, onChangeView, onLogout, userRole 
     { id: 'configuracion', label: 'Configuración', icon: Settings, roles: ['ADMINISTRADOR'] },
   ] as const;
 
-  const navItems = allNavItems.filter(item => item.roles.includes(userRole as any));
+  const navItems = allNavItems.filter(item => {
+    if (!item.roles.includes(userRole as any)) {
+      if (item.id === 'auditoria' && userPermissions?.includes('VER_AUDITORIA')) return true;
+      return false;
+    }
+    if (item.id === 'dashboard' && userPermissions && !userPermissions.includes('VER_DASHBOARD') && userRole !== 'ADMINISTRADOR') {
+      return false;
+    }
+    return true;
+  });
 
   const isActive = (id: string) => {
     if (id === 'dictamenes-list' && (currentView === 'dictamenes-form' || currentView === 'dictamenes-detail')) return true;

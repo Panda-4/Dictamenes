@@ -8,9 +8,17 @@ interface DictamenDetalleProps {
   onBack: () => void;
   onEdit: (solicitud: SolicitudModel) => void;
   userRole: string;
+  userPermissions?: string[];
+  onUpdateSolicitud?: (solicitud: SolicitudModel) => void;
 }
 
-export default function DictamenDetalle({ solicitud, onBack, onEdit, userRole }: DictamenDetalleProps) {
+export default function DictamenDetalle({ solicitud: initialSolicitud, onBack, onEdit, userRole, userPermissions, onUpdateSolicitud }: DictamenDetalleProps) {
+  const canEdit = userRole === 'ADMINISTRADOR' || (userPermissions ? userPermissions.includes('SOLICITUDES_EDITAR') : false);
+  const canValidate = userRole === 'ADMINISTRADOR' || (userPermissions ? userPermissions.includes('SOLICITUDES_VALIDAR') : userRole === 'AUTORIZADOR');
+
+  const [solicitud, setSolicitud] = useState<SolicitudModel>(initialSolicitud);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionSuccess, setActionSuccess] = useState<string>('');
   const [showHistorial, setShowHistorial] = useState(false);
   const [historialLogs, setHistorialLogs] = useState<any[]>([]);
   const [loadingHistorial, setLoadingHistorial] = useState(false);
@@ -36,6 +44,65 @@ export default function DictamenDetalle({ solicitud, onBack, onEdit, userRole }:
       console.error('Error fetching request history:', e);
     } finally {
       setLoadingHistorial(false);
+    }
+  };
+
+
+  const handleValidar = async () => {
+    if (!window.confirm('¿Confirmas que deseas VALIDAR (Declarar Procedente) esta solicitud?')) return;
+    setActionLoading(true);
+    setActionSuccess('');
+    try {
+      const updated = { 
+        ...solicitud, 
+        procedente: true, 
+        estatusGeneral: 'En proceso de elaboración' as const 
+      };
+      const res = await authFetch(`${API_BASE}/api/solicitudes/${solicitud.folioInterno}`, {
+        method: 'PUT',
+        body: JSON.stringify(updated)
+      });
+      if (res.ok) {
+        const saved = await res.json();
+        setSolicitud(saved);
+        if (onUpdateSolicitud) onUpdateSolicitud(saved);
+        setActionSuccess('Solicitud validada y aprobada como procedente.');
+        setTimeout(() => setActionSuccess(''), 4000);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRechazar = async () => {
+    const motivo = window.prompt('Ingrese el motivo o fundamento del rechazo:');
+    if (motivo === null) return;
+    setActionLoading(true);
+    setActionSuccess('');
+    try {
+      const updated = { 
+        ...solicitud, 
+        procedente: false, 
+        observaciones: (solicitud.observaciones ? solicitud.observaciones + ' | ' : '') + 'RECHAZADA: ' + motivo,
+        estatusGeneral: 'Concluido Entregado a dependencia solicitante' as const 
+      };
+      const res = await authFetch(`${API_BASE}/api/solicitudes/${solicitud.folioInterno}`, {
+        method: 'PUT',
+        body: JSON.stringify(updated)
+      });
+      if (res.ok) {
+        const saved = await res.json();
+        setSolicitud(saved);
+        if (onUpdateSolicitud) onUpdateSolicitud(saved);
+        setActionSuccess('Solicitud marcada como no procedente (Rechazada).');
+        setTimeout(() => setActionSuccess(''), 4000);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -82,13 +149,55 @@ export default function DictamenDetalle({ solicitud, onBack, onEdit, userRole }:
           >
             <Download className="w-4 h-4" /> Exportar PDF
           </button>
+          {/* Notificación de éxito en acción */}
+          {actionSuccess && (
+            <div className="text-xs bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 px-3 py-2 rounded-xl font-bold border border-emerald-300 dark:border-emerald-700 animate-in fade-in">
+              {actionSuccess}
+            </div>
+          )}
+
+          {/* Botones de Validación / Rechazo (Permiso SOLICITUDES_VALIDAR) */}
+          {canValidate && (
+            <>
+              <button 
+                onClick={handleValidar}
+                disabled={actionLoading}
+                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-all shadow-md shadow-emerald-600/20 disabled:opacity-50"
+                title="Validar y aprobar procedencia"
+              >
+                <CheckCircle2 className="w-4 h-4" /> Validar Solicitud
+              </button>
+              <button 
+                onClick={handleRechazar}
+                disabled={actionLoading}
+                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold text-white bg-rose-600 hover:bg-rose-700 transition-all shadow-md shadow-rose-600/20 disabled:opacity-50"
+                title="Rechazar solicitud"
+              >
+                <XCircle className="w-4 h-4" /> Rechazar
+              </button>
+            </>
+          )}
+
+          {/* Botón de Editar: Dinámico según privilegio SOLICITUDES_EDITAR */}
           {userRole !== 'CONSULTA' && (
-          <button 
-            onClick={() => onEdit(solicitud)}
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-white bg-gem-primary hover:bg-gem-primary-dark transition-all shadow-md shadow-gem-primary/20"
-          >
-            <Edit className="w-4 h-4" /> Editar Solicitud
-          </button>
+            canEdit ? (
+              <button 
+                onClick={() => onEdit(solicitud)}
+                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-white bg-gem-primary hover:bg-gem-primary-dark transition-all shadow-md shadow-gem-primary/20"
+              >
+                <Edit className="w-4 h-4" /> Editar Solicitud
+              </button>
+            ) : (
+              <button 
+                disabled={true}
+                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold text-gray-400 dark:text-slate-500 bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 cursor-not-allowed opacity-60 shadow-none"
+                title={userRole === 'AUTORIZADOR' 
+                  ? "Edición deshabilitada para el rol Autorizador." 
+                  : "Edición no autorizada temporalmente para tu rol. Solicita al Administrador que active 'Editar Solicitudes'."}
+              >
+                <Edit className="w-4 h-4" /> Editar (Deshabilitado)
+              </button>
+            )
           )}
         </div>
       </div>

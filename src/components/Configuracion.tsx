@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Save, UserCog, Database, Shield, Bell, Plus, X, Edit2, UserX, Settings, CheckCircle, Send } from 'lucide-react';
 import { authFetch, API_BASE } from '../services/authService';
+import GestionCatalogoModal from './GestionCatalogoModal';
+import GestionRolesPermisos from './GestionRolesPermisos';
 
 interface UsuarioData {
   id?: number;
@@ -32,6 +34,12 @@ export default function Configuracion() {
   const [errorMsg, setErrorMsg] = useState('');
   const [mensajeNotificacion, setMensajeNotificacion] = useState('');
   const [enviandoNotificacion, setEnviandoNotificacion] = useState(false);
+
+  // Estado para gestión de catálogos
+  const [catalogoSeleccionado, setCatalogoSeleccionado] = useState<{
+    tipo: 'DEPENDENCIA' | 'CAPITULO' | 'UNIDAD_ADMINISTRATIVA' | 'TIPO_EXCEPCION';
+    titulo: string;
+  } | null>(null);
 
   useEffect(() => {
     if (activeTab === 'usuarios') fetchUsuarios();
@@ -272,52 +280,36 @@ export default function Configuracion() {
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 {['Dependencias y OPDs', 'Capítulos Presupuestales', 'Unidades Administrativas', 'Tipos de Excepción'].map((cat, i) => (
-                    <div key={i} className="p-4 border border-gray-200 dark:border-slate-700 rounded-xl hover:border-gem-primary/50 cursor-pointer transition-colors bg-gray-50 dark:bg-slate-900 hover:bg-white dark:hover:bg-slate-700 flex justify-between items-center">
-                       <span className="font-semibold text-gray-700 dark:text-slate-200">{cat}</span>
-                       <span className="text-xs bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-slate-300 px-2 py-1 rounded-full font-bold">Gestionar</span>
-                    </div>
-                 ))}
-              </div>
-            </div>
-          )}
-
-          {/* ===== TAB: SEGURIDAD ===== */}
-          {activeTab === 'seguridad' && (
-            <div className="space-y-6 animate-in fade-in">
-              <div className="border-b border-gray-100 dark:border-slate-700 pb-4">
-                <h3 className="text-xl font-bold text-gray-800 dark:text-slate-100">Roles y Permisos</h3>
-                <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Referencia de los roles disponibles en el sistema.</p>
-              </div>
-
-              <div className="space-y-4">
                 {[
-                  { rol: 'ADMINISTRADOR', color: 'border-purple-200 bg-purple-50/50 dark:border-purple-900/30 dark:bg-purple-900/10', badge: 'bg-purple-100 text-purple-800',
-                    permisos: ['CRUD completo de solicitudes', 'Eliminar solicitudes', 'Gestión de usuarios', 'Ver auditoría', 'Acceso a configuración'] },
-                  { rol: 'AUTORIZADOR', color: 'border-blue-200 bg-blue-50/50 dark:border-blue-900/30 dark:bg-blue-900/10', badge: 'bg-blue-100 text-blue-800',
-                    permisos: ['Leer y actualizar solicitudes', 'Cambiar estatus de dictámenes', 'Ver dashboard'] },
-                  { rol: 'CAPTURISTA', color: 'border-teal-200 bg-teal-50/50 dark:border-teal-900/30 dark:bg-teal-900/10', badge: 'bg-teal-100 text-teal-800',
-                    permisos: ['Crear solicitudes', 'Leer solicitudes propias', 'Ver dashboard'] },
-                  { rol: 'CONSULTA', color: 'border-cyan-200 bg-cyan-50/50 dark:border-cyan-900/30 dark:bg-cyan-900/10', badge: 'bg-cyan-100 text-cyan-800',
-                    permisos: ['Visualizar dashboard e indicadores', 'Consultar listado de solicitudes', 'Buscar y filtrar expedientes', 'Visualizar detalle de expedientes', 'Exportar información'] },
-                ].map(r => (
-                  <div key={r.rol} className={`border ${r.color} rounded-xl p-5`}>
-                    <div className="flex items-center gap-3 mb-3">
-                      <Shield className="w-5 h-5 text-gray-400" />
-                      <span className={`${r.badge} px-3 py-1 rounded-lg text-xs font-bold`}>{r.rol}</span>
+                  { tipo: 'DEPENDENCIA' as const, titulo: 'Dependencias y OPDs', desc: 'Secretarías, organismos auxiliares y entidades solicitantes.' },
+                  { tipo: 'CAPITULO' as const, titulo: 'Capítulos Presupuestales', desc: 'Partidas y capítulos de gasto (1000, 2000, 3000...).' },
+                  { tipo: 'UNIDAD_ADMINISTRATIVA' as const, titulo: 'Unidades Administrativas', desc: 'Áreas internas de gestión y seguimiento.' },
+                  { tipo: 'TIPO_EXCEPCION' as const, titulo: 'Tipos de Excepción', desc: 'Fundamentación para excepciones de licitación o dictamen.' },
+                ].map((cat, i) => (
+                  <div 
+                    key={i} 
+                    onClick={() => setCatalogoSeleccionado({ tipo: cat.tipo, titulo: cat.titulo })}
+                    className="p-5 border border-gray-200 dark:border-slate-700 rounded-xl hover:border-gem-primary/50 cursor-pointer transition-all bg-gray-50 dark:bg-slate-900 hover:bg-white dark:hover:bg-slate-800 flex justify-between items-center group shadow-sm hover:shadow-md"
+                  >
+                    <div>
+                      <span className="font-semibold text-gray-800 dark:text-slate-100 group-hover:text-gem-primary transition-colors text-base block">
+                        {cat.titulo}
+                      </span>
+                      <span className="text-xs text-gray-400 dark:text-slate-500 mt-0.5 block">
+                        {cat.desc}
+                      </span>
                     </div>
-                    <ul className="space-y-1.5 ml-8">
-                      {r.permisos.map((p, i) => (
-                        <li key={i} className="text-sm text-gray-600 dark:text-slate-400 flex items-center gap-2">
-                          <CheckCircle className="w-3.5 h-3.5 text-green-500" /> {p}
-                        </li>
-                      ))}
-                    </ul>
+                    <span className="text-xs bg-gray-200 dark:bg-slate-700 group-hover:bg-gem-primary group-hover:text-white text-gray-700 dark:text-slate-300 px-3 py-1.5 rounded-lg font-bold transition-colors">
+                      Gestionar
+                    </span>
                   </div>
                 ))}
               </div>
             </div>
           )}
+
+          {/* ===== TAB: SEGURIDAD ===== */}
+          {activeTab === 'seguridad' && <GestionRolesPermisos />}
 
           {/* ===== TAB: NOTIFICACIONES ===== */}
           {activeTab === 'notificaciones' && (
@@ -466,6 +458,15 @@ export default function Configuracion() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal de Gestión de Catálogo Maestro */}
+      {catalogoSeleccionado && (
+        <GestionCatalogoModal
+          catalogoTipo={catalogoSeleccionado.tipo}
+          catalogoTitulo={catalogoSeleccionado.titulo}
+          onClose={() => setCatalogoSeleccionado(null)}
+        />
       )}
     </div>
   );

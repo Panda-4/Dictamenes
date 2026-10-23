@@ -387,10 +387,13 @@ public class ExcelHelper {
                 // Col 1: Numero de Oficio
                 String numeroOficio = getCellString(row.getCell(col++));
                 filaError.setNumeroOficio(numeroOficio);
+                if (numeroOficio == null || numeroOficio.trim().isEmpty()) {
+                    filaError.addMensaje("Col 2 'Número de Oficio': campo obligatorio vacío.");
+                }
 
                 // Col 2: Fecha Recepción DGRM/OM
                 LocalDate fechaRecepcionDGRMOM = getCellDate(row.getCell(col++));
-                
+
                 // Col 3: Excepción DGRM/OM
                 Boolean excepcionDGRMOM = getCellBoolean(row.getCell(col++));
 
@@ -402,9 +405,15 @@ public class ExcelHelper {
 
                 // Col 6: Dependencia / OPD
                 String dependenciaOPD = getCellString(row.getCell(col++));
+                if (dependenciaOPD == null || dependenciaOPD.trim().isEmpty()) {
+                    filaError.addMensaje("Col 7 'Dependencia / OPD': campo obligatorio vacío.");
+                }
 
                 // Col 7: Unidad Administrativa
                 String unidadAdministrativa = getCellString(row.getCell(col++));
+                if (unidadAdministrativa == null || unidadAdministrativa.trim().isEmpty()) {
+                    filaError.addMensaje("Col 8 'Unidad Administrativa': campo obligatorio vacío.");
+                }
 
                 // Col 8: Centro de Costos
                 String centroCostos = getCellString(row.getCell(col++));
@@ -420,14 +429,21 @@ public class ExcelHelper {
 
                 // Col 12: Monto Solicitud
                 BigDecimal montoSolicitud = getCellDecimal(row.getCell(col++));
+                if (montoSolicitud == null) {
+                    filaError.addMensaje("Col 13 'Monto de la Solicitud': campo obligatorio vacío o no numérico.");
+                }
 
                 // Col 13: Tipo de Solicitud
                 String tipoSolicitud = getCellString(row.getCell(col++));
+                if (tipoSolicitud == null || tipoSolicitud.trim().isEmpty()) {
+                    filaError.addMensaje("Col 14 'Tipo de Solicitud': campo obligatorio vacío.");
+                }
 
                 // Col 14: Estatus General
                 String estatusGeneral = getCellString(row.getCell(col++));
                 if (estatusGeneral == null || estatusGeneral.trim().isEmpty()) {
                     estatusGeneral = "En Opinión Técnica de Subdirección de Fianzas y Seguros";
+
                 }
 
                 // Col 15: Descripción Solicitud

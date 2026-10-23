@@ -47,6 +47,15 @@ public class SolicitudServiceImpl implements SolicitudService {
 
     @Override
     public Solicitud save(Solicitud solicitud) {
+        return saveInternal(solicitud, false);
+    }
+
+    /**
+     * Método interno de guardado con opción para omitir notificaciones individuales.
+     * Se usa en importación masiva para evitar miles de inserciones de notificaciones
+     * dentro de una sola transacción.
+     */
+    private Solicitud saveInternal(Solicitud solicitud, boolean omitirNotificaciones) {
         // Aplicar valores por defecto para evitar fallos por constraints NOT NULL en la base de datos
         if (solicitud.getNumeroOficioSolicitud() == null || solicitud.getNumeroOficioSolicitud().trim().isEmpty()) {
             solicitud.setNumeroOficioSolicitud("S/N");
@@ -69,7 +78,7 @@ public class SolicitudServiceImpl implements SolicitudService {
         if (solicitud.getExcepcionDictaminacion() == null) {
             solicitud.setExcepcionDictaminacion(false);
         }
-        
+
         normalizarCampos(solicitud);
 
         boolean isNew = solicitud.getFolioInterno() == null;
@@ -96,11 +105,12 @@ public class SolicitudServiceImpl implements SolicitudService {
 
         String accion = isNew ? "CREACIÓN" : "ACTUALIZACIÓN";
         registrarAuditoria(accion, detalle, cambiosJson);
-        
-        if (isNew) {
+
+        // Generar notificaciones individuales solo si no estamos en modo batch
+        if (isNew && !omitirNotificaciones) {
             generarNotificacionesNuevaSolicitud(saved);
         }
-        
+
         return saved;
     }
 
@@ -226,7 +236,24 @@ public class SolicitudServiceImpl implements SolicitudService {
         try {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String creador = auth != null ? auth.getName() : "SISTEMA";
-            String msj = "Nueva solicitud #" + solicitud.getFolioInterno() + " (" + solicitud.getTipoSolicitud() + ") registrada por " + creador;
+            
+            StringBuilder sb = new StringBuilder();
+            sb.append("Nueva solicitud #").append(solicitud.getFolioInterno());
+            if (solicitud.getTipoSolicitud() != null && !solicitud.getTipoSolicitud().isBlank()) {
+                sb.append(" (").append(solicitud.getTipoSolicitud()).append(")");
+            }
+            if (solicitud.getDependenciaOPD() != null && !solicitud.getDependenciaOPD().isBlank()) {
+                sb.append(" de ").append(solicitud.getDependenciaOPD());
+            }
+            if (solicitud.getMontoSolicitud() != null) {
+                sb.append(" por $").append(String.format("%,.2f", solicitud.getMontoSolicitud())).append(" MXN");
+            }
+            if (solicitud.getNumeroOficioSolicitud() != null && !solicitud.getNumeroOficioSolicitud().isBlank()) {
+                sb.append(" [Oficio: ").append(solicitud.getNumeroOficioSolicitud()).append("]");
+            }
+            sb.append(" - Pendiente de revisión.");
+            
+            String msj = sb.toString();
             
             Notificacion notifAdmin = new Notificacion();
             notifAdmin.setMensaje(msj);
@@ -243,8 +270,20 @@ public class SolicitudServiceImpl implements SolicitudService {
             notifAuth.setSolicitudId(solicitud.getFolioInterno());
             notifAuth.setCreadoPor(creador);
             notifAuth.setLeida(false);
+
+            // Notificación para el Capturista confirmando el envío al área autorizadora
+            Notificacion notifCapturista = new Notificacion();
+            String msjCapturista = "Tu solicitud #" + solicitud.getFolioInterno() 
+                    + " (" + (solicitud.getTipoSolicitud() != null ? solicitud.getTipoSolicitud() : "Dictamen") + ")"
+                    + " fue registrada correctamente y turnada al área Autorizadora para su revisión.";
+            notifCapturista.setMensaje(msjCapturista);
+            notifCapturista.setFecha(LocalDateTime.now());
+            notifCapturista.setDestinatarioRol("CAPTURISTA");
+            notifCapturista.setSolicitudId(solicitud.getFolioInterno());
+            notifCapturista.setCreadoPor(creador);
+            notifCapturista.setLeida(false);
             
-            notificacionRepository.saveAll(List.of(notifAdmin, notifAuth));
+            notificacionRepository.saveAll(List.of(notifAdmin, notifAuth, notifCapturista));
         } catch (Exception e) {
             System.err.println("Error generando notificaciones: " + e.getMessage());
         }
@@ -322,10 +361,52 @@ public class SolicitudServiceImpl implements SolicitudService {
     @Override
     @org.springframework.transaction.annotation.Transactional
     public void confirmImport(List<Solicitud> solicitudes) {
-        if (solicitudes == null) return;
+        if (solicitudes == null || solicitudes.isEmpty()) return;
+
+        int nuevas = 0;
+        int actualizadas = 0;
         for (Solicitud s : solicitudes) {
-            save(s);
+            boolean esNueva = s.getFolioInterno() == null;
+            // Usar modo batch: omitir notificaciones individuales para evitar sobrecarga de BD
+            saveInternal(s, true);
+            if (esNueva) nuevas++; else actualizadas++;
         }
-        registrarAuditoria("IMPORTACIÓN_EXCEL", "Carga masiva realizada. Registros importados/actualizados: " + solicitudes.size(), null);
+
+        registrarAuditoria("IMPORTACIÓN_EXCEL",
+                "Carga masiva realizada. Nuevas: " + nuevas + ", Actualizadas: " + actualizadas
+                + ", Total procesados: " + solicitudes.size(), null);
+
+        // Enviar una única notificación resumen para no saturar la tabla con miles de registros
+        generarNotificacionResumenImportacion(nuevas, actualizadas);
+    }
+
+    /**
+     * Genera una única notificación resumen al finalizar una importación masiva.
+     * Reemplaza la generación individual de notificaciones por registro,
+     * que podía crear miles de registros en una sola transacción.
+     */
+    private void generarNotificacionResumenImportacion(int nuevas, int actualizadas) {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String creador = auth != null ? auth.getName() : "Sistema";
+            String mensaje = "Importación masiva completada: " + nuevas + " nuevas solicitudes registradas"
+                    + (actualizadas > 0 ? " y " + actualizadas + " actualizadas" : "") + ".";
+            LocalDateTime ahora = LocalDateTime.now();
+
+            String[] roles = {"ADMINISTRADOR", "AUTORIZADOR", "CAPTURISTA"};
+            List<Notificacion> notificaciones = new ArrayList<>();
+            for (String rol : roles) {
+                Notificacion n = new Notificacion();
+                n.setMensaje(mensaje);
+                n.setFecha(ahora);
+                n.setDestinatarioRol(rol);
+                n.setCreadoPor(creador);
+                n.setLeida(false);
+                notificaciones.add(n);
+            }
+            notificacionRepository.saveAll(notificaciones);
+        } catch (Exception e) {
+            System.err.println("Error generando notificación resumen de importación: " + e.getMessage());
+        }
     }
 }

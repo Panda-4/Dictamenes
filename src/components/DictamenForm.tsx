@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Save, X, RefreshCw, FileText, CheckCircle, ShieldAlert, ChevronDown, ChevronUp } from 'lucide-react';
 import { SolicitudModel, TipoSolicitud } from '../types';
+import { getCatalogosActivos, CatalogoItem } from '../services/catalogoService';
 
 interface DictamenFormProps {
   onCancel: () => void;
@@ -8,6 +9,15 @@ interface DictamenFormProps {
   initialData?: SolicitudModel | null;
   errorMessage?: string;
 }
+
+const FALLBACK_CAPITULOS = [
+  { id: '1000', label: '1000 - Servicios Personales' },
+  { id: '2000', label: '2000 - Materiales y Suministros' },
+  { id: '3000', label: '3000 - Servicios Generales' },
+  { id: '4000', label: '4000 - Transferencias, Asignaciones, Subsidios y Otras Ayudas' },
+  { id: '5000', label: '5000 - Bienes Muebles, Inmuebles e Intangibles' },
+  { id: '6000', label: '6000 - Inversión Pública' },
+];
 
 export default function DictamenForm({ onCancel, onSave, initialData, errorMessage }: DictamenFormProps) {
   const [formData, setFormData] = useState<Partial<SolicitudModel>>(
@@ -24,15 +34,28 @@ export default function DictamenForm({ onCancel, onSave, initialData, errorMessa
   );
 
   const [isCapitulosOpen, setIsCapitulosOpen] = useState(false);
+  const [catalogoCapitulos, setCatalogoCapitulos] = useState<{ id: string; label: string }[]>(FALLBACK_CAPITULOS);
+  const [catalogoDependencias, setCatalogoDependencias] = useState<string[]>([]);
 
-  const CATALOGO_CAPITULOS = [
-    { id: '1000', label: '1000 - Servicios Personales' },
-    { id: '2000', label: '2000 - Materiales y Suministros' },
-    { id: '3000', label: '3000 - Servicios Generales' },
-    { id: '4000', label: '4000 - Transferencias, Asignaciones, Subsidios y Otras Ayudas' },
-    { id: '5000', label: '5000 - Bienes Muebles, Inmuebles e Intangibles' },
-    { id: '6000', label: '6000 - Inversión Pública' },
-  ];
+  useEffect(() => {
+    // Carga dinámica de capítulos
+    getCatalogosActivos('CAPITULO')
+      .then(items => {
+        if (items && items.length > 0) {
+          setCatalogoCapitulos(items.map(it => ({ id: it.codigo || String(it.id), label: it.nombre })));
+        }
+      })
+      .catch(() => {});
+
+    // Carga dinámica de dependencias
+    getCatalogosActivos('DEPENDENCIA')
+      .then(items => {
+        if (items && items.length > 0) {
+          setCatalogoDependencias(items.map(it => it.nombre));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleCapituloChange = (capLabel: string) => {
     const currentVal = formData.capitulo || '';
@@ -167,46 +190,22 @@ export default function DictamenForm({ onCancel, onSave, initialData, errorMessa
                   className="w-full bg-white/50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-600 text-gray-800 dark:text-slate-100 text-sm rounded-xl focus:ring-2 focus:ring-gem-primary/20 focus:border-gem-primary block p-3 transition-colors shadow-sm"
                 >
                   <option value="">Seleccione...</option>
-                 <option value="Poder Legislativo">Poder Legislativo</option>
-<option value="Unidad de Información">Unidad de Información</option>
-<option value="Gubernatura">Gubernatura</option>
-<option value="Coordinación General de Comunicación Social">Coordinación General de Comunicación Social</option>
-<option value="Secretaría General de Gobierno">Secretaría General de Gobierno</option>
-<option value="Secretaría de Seguridad">Secretaría de Seguridad</option>
-<option value="Secretaría de Finanzas">Secretaría de Finanzas</option>
-<option value="Secretaría de Salud">Secretaría de Salud</option>
-<option value="Secretaría del Trabajo">Secretaría del Trabajo</option>
-<option value="Secretaría de Desarrollo Económico">Secretaría de Desarrollo Económico</option>
-<option value="Secretaría de la Contraloría">Secretaría de la Contraloría</option>
-<option value="Secretaría de Movilidad">Secretaría de Movilidad</option>
-<option value="Secretaría del Campo">Secretaría del Campo</option>
-<option value="Secretaría de Cultura y Turismo">Secretaría de Cultura y Turismo</option>
-<option value="Secretaría de las Mujeres">Secretaría de las Mujeres</option>
-<option value="Secretaría de Educación, Ciencia, Tecnología e Innovación">Secretaría de Educación, Ciencia, Tecnología e Innovación</option>
-<option value="Secretaría de Bienestar">Secretaría de Bienestar</option>
-<option value="Secretaría de Desarrollo Urbano e Infraestructura">Secretaría de Desarrollo Urbano e Infraestructura</option>
-<option value="Secretaría del Medio Ambiente y Desarrollo Sostenible">Secretaría del Medio Ambiente y Desarrollo Sostenible</option>
-<option value="Secretaría del Agua">Secretaría del Agua</option>
-<option value="Consejería Jurídica">Consejería Jurídica</option>
-<option value="Oficialía Mayor">Oficialía Mayor</option>
-<option value="Jefatura de Gabinete y Proyectos Especiales">Jefatura de Gabinete y Proyectos Especiales</option>
-<option value="Vocería de la Gubernatura">Vocería de la Gubernatura</option>
-<option value="Coordinación Técnica">Coordinación Técnica</option>
-<option value="Agencia Digital del Estado de México">Agencia Digital del Estado de México</option>
-<option value="Poder Judicial">Poder Judicial</option>
-<option value="Instituto Electoral del Estado de México">Instituto Electoral del Estado de México</option>
-<option value="Comisión de Derechos Humanos del Estado de México">Comisión de Derechos Humanos del Estado de México</option>
-<option value="Tribunal de Justicia Administrativa">Tribunal de Justicia Administrativa</option>
-<option value="Junta Local de Conciliación y Arbitraje Valle de Toluca">Junta Local de Conciliación y Arbitraje Valle de Toluca</option>
-<option value="Tribunal Estatal de Conciliación y Arbitraje">Tribunal Estatal de Conciliación y Arbitraje</option>
-<option value="Universidad Autónoma del Estado de México">Universidad Autónoma del Estado de México</option>
-<option value="Junta Local de Conciliación y Arbitraje del Valle Cuautitlán-Texcoco">Junta Local de Conciliación y Arbitraje del Valle Cuautitlán-Texcoco</option>
-<option value="Tribunal Electoral del Estado de México">Tribunal Electoral del Estado de México</option>
-<option value="Instituto de Transparencia, Acceso a la Información Pública y Protección de Datos Personales">Instituto de Transparencia, Acceso a la Información Pública y Protección de Datos Personales</option>
-<option value="Fiscalía General de Justicia">Fiscalía General de Justicia</option>
-<option value="Secretaría Ejecutiva del Sistema Estatal Anticorrupción">Secretaría Ejecutiva del Sistema Estatal Anticorrupción</option>
-<option value="Otros">Otros</option>
-
+                  {(catalogoDependencias.length > 0 ? catalogoDependencias : [
+                    "Poder Legislativo", "Unidad de Información", "Gubernatura", "Coordinación General de Comunicación Social",
+                    "Secretaría General de Gobierno", "Secretaría de Seguridad", "Secretaría de Finanzas", "Secretaría de Salud",
+                    "Secretaría del Trabajo", "Secretaría de Desarrollo Económico", "Secretaría de la Contraloría",
+                    "Secretaría de Movilidad", "Secretaría del Campo", "Secretaría de Cultura y Turismo", "Secretaría de las Mujeres",
+                    "Secretaría de Educación, Ciencia, Tecnología e Innovación", "Secretaría de Bienestar", "Secretaría de Desarrollo Urbano e Infraestructura",
+                    "Secretaría del Medio Ambiente y Desarrollo Sostenible", "Secretaría del Agua", "Consejería Jurídica", "Oficialía Mayor",
+                    "Jefatura de Gabinete y Proyectos Especiales", "Vocería de la Gubernatura", "Coordinación Técnica", "Agencia Digital del Estado de México",
+                    "Poder Judicial", "Instituto Electoral del Estado de México", "Comisión de Derechos Humanos del Estado de México",
+                    "Tribunal de Justicia Administrativa", "Junta Local de Conciliación y Arbitraje Valle de Toluca", "Tribunal Estatal de Conciliación y Arbitraje",
+                    "Universidad Autónoma del Estado de México", "Junta Local de Conciliación y Arbitraje del Valle Cuautitlán-Texcoco",
+                    "Tribunal Electoral del Estado de México", "Instituto de Transparencia, Acceso a la Información Pública y Protección de Datos Personales",
+                    "Fiscalía General de Justicia", "Secretaría Ejecutiva del Sistema Estatal Anticorrupción", "Otros"
+                  ]).map((dep) => (
+                    <option key={dep} value={dep}>{dep}</option>
+                  ))}
                 </select>
               </div>
 
@@ -261,7 +260,7 @@ export default function DictamenForm({ onCancel, onSave, initialData, errorMessa
 
                   {isCapitulosOpen && (
                     <div className="absolute z-50 top-full left-0 w-full mt-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-xl p-3 space-y-1 max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-200 custom-scrollbar">
-                      {CATALOGO_CAPITULOS.map((cap) => {
+                      {catalogoCapitulos.map((cap) => {
                         const isChecked = (formData.capitulo || '').split('; ').includes(cap.label);
                         return (
                           <label 

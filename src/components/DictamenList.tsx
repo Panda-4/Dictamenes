@@ -10,9 +10,15 @@ interface DictamenListProps {
   onExportExcel: () => void;
   data: SolicitudModel[];
   userRole: string;
+  userPermissions?: string[];
 }
 
-export default function DictamenList({ onCreate, onEdit, onViewDetail, onDelete, onExportExcel, data, userRole }: DictamenListProps) {
+export default function DictamenList({ onCreate, onEdit, onViewDetail, onDelete, onExportExcel, data, userRole, userPermissions }: DictamenListProps) {
+  const canEdit = userRole === 'ADMINISTRADOR' || (userPermissions ? userPermissions.includes('SOLICITUDES_EDITAR') : false);
+  const canCreate = userRole === 'ADMINISTRADOR' || (userPermissions ? userPermissions.includes('SOLICITUDES_CREAR') : userRole === 'CAPTURISTA');
+  const canDelete = userRole === 'ADMINISTRADOR' || (userPermissions ? userPermissions.includes('SOLICITUDES_ELIMINAR') : false);
+  const canExport = userRole === 'ADMINISTRADOR' || (userPermissions ? userPermissions.includes('EXPORTAR_DATOS') : true);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [filterTipo, setFilterTipo] = useState('');
@@ -69,18 +75,20 @@ export default function DictamenList({ onCreate, onEdit, onViewDetail, onDelete,
         </div>
         <div className="flex gap-3 w-full md:w-auto">
           {/* Botón Exportar Excel */}
-          <button
-            onClick={onExportExcel}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm text-white bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 transition-all shadow-md shadow-emerald-600/20"
-            title="Exportar a Excel con todos los campos"
-          >
-            <Download className="w-4 h-4" />
-            Exportar Excel
-          </button>
-          {userRole !== 'CONSULTA' && (
-          <button onClick={onCreate} className="flex-1 md:flex-none flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-white bg-gem-primary hover:bg-gem-primary-dark transition-all shadow-lg shadow-gem-primary/20">
-            <Plus className="w-5 h-5" /> Nueva Solicitud
-          </button>
+          {canExport && (
+            <button
+              onClick={onExportExcel}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm text-white bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 transition-all shadow-md shadow-emerald-600/20"
+              title="Exportar a Excel con todos los campos"
+            >
+              <Download className="w-4 h-4" />
+              Exportar Excel
+            </button>
+          )}
+          {canCreate && (
+            <button onClick={onCreate} className="flex-1 md:flex-none flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-white bg-gem-primary hover:bg-gem-primary-dark transition-all shadow-lg shadow-gem-primary/20">
+              <Plus className="w-5 h-5" /> Nueva Solicitud
+            </button>
           )}
         </div>
       </div>
@@ -210,7 +218,7 @@ export default function DictamenList({ onCreate, onEdit, onViewDetail, onDelete,
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        {userRole === 'ADMINISTRADOR' && (
+                        {canDelete && (
                           <button 
                             onClick={() => item.folioInterno && onDelete(item.folioInterno)}
                             className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors inline-flex opacity-0 group-hover:opacity-100"
@@ -227,13 +235,25 @@ export default function DictamenList({ onCreate, onEdit, onViewDetail, onDelete,
                            <Eye className="w-5 h-5" />
                         </button>
                         {userRole !== 'CONSULTA' && (
-                        <button 
-                           onClick={() => onEdit(item)}
-                           className="p-2 text-gem-primary hover:bg-gem-primary/10 rounded-lg transition-colors inline-flex opacity-0 group-hover:opacity-100"
-                           title="Editar"
-                        >
-                           <ChevronRight className="w-5 h-5" />
-                        </button>
+                          canEdit ? (
+                            <button 
+                               onClick={() => onEdit(item)}
+                               className="p-2 text-gem-primary hover:bg-gem-primary/10 rounded-lg transition-colors inline-flex opacity-0 group-hover:opacity-100"
+                               title="Editar Solicitud"
+                            >
+                               <ChevronRight className="w-5 h-5" />
+                            </button>
+                          ) : (
+                            <button 
+                               disabled={true}
+                               className="p-2 text-gray-300 dark:text-slate-600 rounded-lg inline-flex opacity-0 group-hover:opacity-100 cursor-not-allowed"
+                               title={userRole === 'AUTORIZADOR' 
+                                 ? "Edición deshabilitada para Autorizador. Para revisar, pulse Ver Detalle." 
+                                 : "Edición no autorizada temporalmente para tu rol. Solicita al Administrador que active 'Editar Solicitudes'."}
+                            >
+                               <ChevronRight className="w-5 h-5" />
+                            </button>
+                          )
                         )}
                       </div>
                     </td>
